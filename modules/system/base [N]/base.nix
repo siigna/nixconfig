@@ -9,7 +9,10 @@
 
       config = {
         nixpkgs.config.allowUnfree = true;
-        nixpkgs.overlays = [ (import inputs.packages) ];
+        nixpkgs.overlays = [
+          (import inputs.packages)
+          inputs.claude-code-nix.overlays.default
+        ];
 
         # TODO: migrate Tailscale auth key to agenix secrets management
         nixpkgs.config.permittedInsecurePackages = [
