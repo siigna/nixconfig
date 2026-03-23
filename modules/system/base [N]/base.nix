@@ -169,6 +169,7 @@
         nix.settings = {
           experimental-features = [ "nix-command" "flakes" ];
           trusted-users = [ "root" "siigna" ];
+          auto-optimise-store = true;
         };
 
         security.sudo.wheelNeedsPassword = false;
