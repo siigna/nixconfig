@@ -77,6 +77,70 @@
         services.xserver.enable = true;
         services.displayManager.gdm.enable = true;
         services.desktopManager.gnome.enable = true;
+
+        # GDM monitor config: prefer XREAL glasses as primary, fall back to built-in eDP-1.
+        # GDM reads /var/lib/gdm/.config/monitors.xml and matches the config whose monitor
+        # set (including disabled) matches the currently connected hardware.
+        systemd.tmpfiles.rules = [
+          "L+ /var/lib/gdm/.config/monitors.xml - - - - ${pkgs.writeText "gdm-monitors.xml" ''
+            <monitors version="2">
+              <!-- XREAL One Pro connected: use as primary, disable eDP-1 -->
+              <configuration>
+                <layoutmode>physical</layoutmode>
+                <logicalmonitor>
+                  <x>0</x>
+                  <y>0</y>
+                  <scale>1</scale>
+                  <primary>yes</primary>
+                  <monitor>
+                    <monitorspec>
+                      <connector>DP-1</connector>
+                      <vendor>MRG</vendor>
+                      <product>XREAL One Pro</product>
+                      <serial>0x00000000</serial>
+                    </monitorspec>
+                    <mode>
+                      <width>1920</width>
+                      <height>1080</height>
+                      <rate>120.000</rate>
+                    </mode>
+                  </monitor>
+                </logicalmonitor>
+                <disabled>
+                  <monitorspec>
+                    <connector>eDP-1</connector>
+                    <vendor>VLV</vendor>
+                    <product>ANX7530 U</product>
+                    <serial>0x00000001</serial>
+                  </monitorspec>
+                </disabled>
+              </configuration>
+              <!-- Fallback: eDP-1 only (glasses not connected) -->
+              <configuration>
+                <layoutmode>physical</layoutmode>
+                <logicalmonitor>
+                  <x>0</x>
+                  <y>0</y>
+                  <scale>1</scale>
+                  <primary>yes</primary>
+                  <monitor>
+                    <monitorspec>
+                      <connector>eDP-1</connector>
+                      <vendor>VLV</vendor>
+                      <product>ANX7530 U</product>
+                      <serial>0x00000001</serial>
+                    </monitorspec>
+                    <mode>
+                      <width>1280</width>
+                      <height>800</height>
+                      <rate>90.061</rate>
+                    </mode>
+                  </monitor>
+                </logicalmonitor>
+              </configuration>
+            </monitors>
+          ''}"
+        ];
         services.xserver.xkb.layout = "us";
         services.flatpak.enable = true;
         services.printing.enable = true;
