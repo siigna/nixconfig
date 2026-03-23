@@ -7,6 +7,7 @@ pkgs.stdenv.mkDerivation rec {
 
   src = builtins.fetchGit {
     url = "https://github.com/adi1090x/plymouth-themes";
+    rev = "5d8817458d764bff4ff9daae94cf1bbaabf16ede";
   };
 
   buildInputs = [

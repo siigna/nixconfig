@@ -1,0 +1,15 @@
+--- a/src/state.c
++++ b/src/state.c
+@@ -27,6 +27,12 @@ void write_state(driver_state_type *state) {
+     char *full_path = NULL;
+     FILE* fp = get_driver_state_file(state_filename, "w", &full_path);
+ 
++    if (!fp) {
++        if (full_path) free(full_path);
++        pthread_mutex_unlock(&state_mutex);
++        return;
++    }
++
+     fprintf(fp, "heartbeat=%d\n", state->heartbeat);
+     if (get_hardware_id()) fprintf(fp, "hardware_id=%s\n", get_hardware_id());
+     if (state->device_license) fprintf(fp, "device_license=%s\n", state->device_license);

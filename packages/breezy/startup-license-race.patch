@@ -1,0 +1,19 @@
+--- a/src/driver.c
++++ b/src/driver.c
+@@ -699,6 +699,16 @@
+     control_flags->request_features = NULL;
+ 
+     plugins.start();
++
++    // Re-read config after plugins.start(): device_license_start_func() performs a synchronous
++    // network request (curl) to fetch the license, populates state()->granted_features, and calls
++    // reset_productivity_features().  The first update_config_from_file() call above ran before
++    // this, so is_productivity_granted() was cached as false even when a trial or paid license
++    // exists.  Re-reading the config here ensures breezy_desktop.enabled is evaluated with the
++    // correct granted_features and written to the IPC file as ENABLED before device connect.
++    rewind(config_fp);
++    update_config_from_file(config_fp);
++
+     write_state(state());
+     set_on_device_change_callback(evaluate_block_on_device_ready);
+     log_message("Starting up XR driver\n");

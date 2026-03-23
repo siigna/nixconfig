@@ -1,0 +1,21 @@
+--- a/ui/src/gtk/window.ui
++++ b/ui/src/gtk/window.ui
+@@ -107,8 +107,15 @@
+         </child>
+         <child>
+-          <object class="GtkBox" id="main_content">
+-            <property name="vexpand">True</property>
+-          </object>
++          <object class="GtkScrolledWindow">
++            <property name="vexpand">True</property>
++            <property name="hscrollbar-policy">never</property>
++            <child>
++              <object class="GtkBox" id="main_content">
++                <property name="vexpand">True</property>
++                <property name="orientation">vertical</property>
++              </object>
++            </child>
++          </object>
+         </child>
+       </object>
+     </property>

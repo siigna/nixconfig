@@ -1,0 +1,18 @@
+--- a/src/ipc.c
++++ b/src/ipc.c
+@@ -41,8 +41,13 @@
+     setup_ipc_value(pose_orientation_mutex_ipc_name, (void**) &ipc_values->pose_orientation_mutex, sizeof(pthread_mutex_t), debug);
+     int ret = pthread_mutex_destroy(ipc_values->pose_orientation_mutex);
+     if (ret != 0) {
+-        perror("pthread_mutex_destroy");
+-        if (ret != EINVAL) return false;
++        if (ret == EOWNERDEAD || ret == ENOTRECOVERABLE) {
++            // The mutex owner died (e.g. driver was killed). Since we're about
++            // to reinitialize it anyway, this is expected and non-fatal.
++        } else if (ret != EINVAL && ret != EPERM) {
++            perror("pthread_mutex_destroy");
++            return false;
++        }
+     }
+
+     pthread_mutexattr_t attr;

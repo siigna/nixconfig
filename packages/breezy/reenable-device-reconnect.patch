@@ -1,0 +1,29 @@
+--- a/src/driver.c	2026-03-22 16:54:20.575482923 -0700
++++ b/src/driver.c	2026-03-22 17:04:36.872140635 -0700
+@@ -332,6 +332,7 @@
+         log_debug("Exiting block_on_device thread; force_quit %d\n", force_quit);
+ }
+ 
++static bool first_config_read = true;
+ void update_config_from_file(FILE *fp) {
+     driver_config_type* new_config = parse_config_file(fp);
+ 
+@@ -399,7 +400,17 @@
+     if (output_mode_changed && is_driver_connected()) reinit_outputs();
+ 
+     if (ipc_values) *ipc_values->disabled = driver_disabled();
+-    
++
++    if (driver_reenabled && !first_config_read) {
++        // Exit so systemd Restart=always brings the driver back with a
++        // fresh device pipeline.  Setting force_quit doesn't reliably
++        // terminate all threads; exit() is immediate and clean enough
++        // since systemd will restart us.
++        log_message("Driver re-enabled, exiting to reconnect device\n");
++        exit(0);
++    }
++    first_config_read = false;
++
+     evaluate_block_on_device_ready();
+ }
+ 
