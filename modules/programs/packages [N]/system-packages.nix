@@ -25,6 +25,7 @@
         nix-tree esptool gnomeExtensions.tactile gnomeExtensions.caffeine cmatrix
         unityhub tytools netflix bambu-studio bottles-unwrapped claude-code
         rustscan nmap binwalk ffmpeg attic-client android-tools discord
+        nix-sweep
         (python313.withPackages (ps: with ps; [
           numpy
           scipy
