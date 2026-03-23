@@ -14,6 +14,7 @@
       bootnext
       siigna
       boucheblaster
+      steam-library
       radio
       breezy
       intellij
