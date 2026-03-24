@@ -20,6 +20,13 @@
       config = {
         networking.hostName = "nixbuilder";
         networking.useDHCP = lib.mkDefault true;
+        # Force ethernet interfaces up at boot — without this, networkd leaves
+        # the link down until manually upped (observed on Proxmox virtio NICs).
+        systemd.network.networks."10-ethernet" = {
+          matchConfig.Name = "en* eth*";
+          linkConfig.ActivationPolicy = "always-up";
+          networkConfig.DHCP = "yes";
+        };
 
         boot.loader.grub.enable = true;
         # Serial console for Proxmox "Serial Console" tab fallback.
