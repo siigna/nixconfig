@@ -18,6 +18,7 @@
       radio
       breezy
       intellij
+      xreal-one
     ];
     nixdeck.useGrub = false;
   };
