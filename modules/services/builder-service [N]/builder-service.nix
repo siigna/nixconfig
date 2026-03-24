@@ -22,6 +22,12 @@
         networking.useDHCP = lib.mkDefault true;
 
         boot.loader.grub.enable = true;
+        # Serial console for Proxmox "Serial Console" tab fallback.
+        # tty1 listed last so it remains the GRUB/boot default.
+        boot.kernelParams = lib.mkAfter [
+          "console=ttyS0,115200n8"
+          "console=tty1"
+        ];
 
         services.openssh = {
           enable = true;
