@@ -3,13 +3,13 @@
   flake.modules.nixos.xreal-one =
     { pkgs, ... }:
     {
-      # Install the xreal_one_ctl binary so the user can run:
+      # Install xreal_one_ctl and the AR compositor.
       #   xreal_one_ctl enable-camera   # turns on the passthrough eye camera
-      #   xreal_one_ctl --help          # see all commands
-      #
-      # After enable-camera, the XReal One Pro disconnects and reconnects with
-      # an additional UVC camera device that apps like OBS can access.
-      environment.systemPackages = [ pkgs.xreal-one-ctl ];
+      #   ar-compositor                 # live AR passthrough + recording GUI
+      environment.systemPackages = [
+        pkgs.xreal-one-ctl
+        pkgs.ar-compositor
+      ];
 
       # Allow the user USB access to the XReal One device without sudo.
       # Vendor ID 0x3318 is XReal (formerly Nreal).
