@@ -1,3 +1,28 @@
+# Breezy Desktop GNOME component — extension + settings UI + virtualdisplay.
+#
+# Build structure: the top-level repo uses CMake for the full system, but only
+# the ui/ subdirectory is a Meson project. We run `meson setup` inside ui/ and
+# compile only that subtree; the CMake top-level is not invoked here.
+#
+# Symlink resolution in buildPhase: the gnome/src directory contains symlinks
+# that point into sibling subdirectories of the monorepo (schemas, textures,
+# shader sources). These are resolved by explicitly copying the targets over the
+# symlinks before compiling schemas or packaging the extension. The unlink+cp
+# sequence is intentional — patch or substituteInPlace would follow the symlink
+# and modify the source, which fails in the Nix sandbox.
+#
+# Python wrapping: the breezydesktop binary is a compiled GResource bundle that
+# spawns Python scripts from the same package. There are no setuptools entry
+# points, so we manually detect Python shebangs and call wrapProgram to inject
+# PYTHONPATH, APPDIR, and BINDIR. The --skip-verification flag suppresses the
+# upstream check for `breezy_gnome_verify`, which is produced by the bash
+# installer and doesn't exist in the Nix build.
+#
+# Extension path rewrite: extension.js hardcodes /usr/bin/xr_driver_cli for the
+# keyboard toggle shortcut. substituteInPlace rewrites it to the Nix store path.
+# Note: the GNOME extension also looks at $XDG_BIN_HOME/xr_driver_cli (i.e.
+# ~/.local/bin/) — a symlink there is needed on NixOS because that dir is on
+# PATH for the user but $out/bin is not unless added explicitly.
 {
   source,
   lib,
@@ -79,9 +104,7 @@ stdenv.mkDerivation rec {
     meson setup build
     cd ..
   '';
-  # substituteInPlace src/verify.py \
-  #   --replace "exit(1)" ""
-  #   --replace "False" 'True' \
+
   buildPhase = ''
     cd ui/build
     meson compile

@@ -1,3 +1,26 @@
+# XRLinuxDriver — the background daemon and CLI tools.
+#
+# Upstream ships a bash installer that downloads pre-built binaries; this
+# derivation builds from source instead. A few NixOS-specific complications:
+#
+# Rust submodule: the xreal_one_driver crate lives six directories deep inside
+# a git submodule (modules/xrealInterfaceLibrary). cargoRoot must point there
+# so cargoSetupHook can vendor the dependencies.
+#
+# Prebuilt vendor libs: upstream bundles architecture-specific closed-source
+# .so files (SteamVR overlay layer, etc.) under lib/x86_64/ or lib/aarch64/.
+# autoPatchelfHook rewrites their ELF interpreter and rpath so they work under
+# NixOS. addAutoPatchelfSearchPath in preBuild makes the hook find peer libs
+# inside the same output directory before they're in the default search path.
+#
+# hidapi: the upstream build links hidapi dynamically but doesn't vendor the
+# .so, so we copy libhidapi-hidraw.so.0 from the Nix store into $out/lib to
+# satisfy autoPatchelf for the prebuilt libs that need it.
+#
+# RPATH: -DCMAKE_SKIP_RPATH=ON prevents CMake from embedding store paths in
+# the binaries (autoPatchelfHook handles rpath instead).
+# -DCMAKE_EXE_LINKER_FLAGS=-ludev works around a missing direct dependency
+# declaration in the upstream CMakeLists.
 {
   source,
   lib,

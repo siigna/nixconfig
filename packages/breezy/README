@@ -1,1 +1,80 @@
-https://github.com/wheaney/breezy-desktop/issues/121
+# breezy-desktop Nix package
+
+Unofficial Nix packaging of [Breezy Desktop](https://github.com/wheaney/breezy-desktop)
+(XR glasses driver + GNOME extension + settings UI) for NixOS.
+
+Upstream issue tracking Nix packaging: https://github.com/wheaney/breezy-desktop/issues/121
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `default.nix` | Top-level package — pins version, fetches source, wires subpackages |
+| `xrlinuxdriver.nix` | `xrDriver` daemon, `xr_driver_cli`, `xr_driver_verify`, udev rules, systemd unit |
+| `breezy-gnome.nix` | GNOME shell extension + `breezydesktop` settings UI + `virtualdisplay` binary |
+| `*.patch` | Fixes for upstream bugs (see patch comments in `xrlinuxdriver.nix`) |
+
+## Usage
+
+As a nixpkgs overlay (e.g. from this directory):
+
+```nix
+nixpkgs.overlays = [
+  (final: prev: {
+    breezy-desktop = final.callPackage ./breezy { };
+  })
+];
+```
+
+Then `pkgs.breezy-desktop` is a `symlinkJoin` of both subpackages. The GNOME
+extension UUID is exposed at `pkgs.breezy-desktop.extensionUuid` for use with
+`services.gnome.gnome-shell.extensions` or similar.
+
+## What gets installed
+
+- `bin/xrDriver` — background daemon that owns the USB device
+- `bin/xr_driver_cli` — CLI to read/write driver config
+- `bin/xr_driver_verify` — licence/feature verification helper
+- `bin/breezydesktop` — GTK4 settings application
+- `bin/virtualdisplay` — virtual display utility
+- `share/gnome-shell/extensions/breezydesktop@xronlinux.com/` — GNOME extension
+- `lib/udev/rules.d/` — udev rules for XR device access
+- `lib/systemd/user/xr-driver.service` — upstream systemd unit (paths rewritten)
+
+## Platform support
+
+`x86_64-linux` and `aarch64-linux`. Upstream bundles prebuilt shared libraries
+(SteamVR overlay, etc.) for both architectures; `autoPatchelfHook` patches their
+ELF interpreter/rpath so they work under NixOS.
+
+## Updating
+
+Change `version` and `sha256` in `default.nix`. The Cargo lock path is derived
+from `source.src`, so `cargoDeps` in `xrlinuxdriver.nix` updates automatically.
+Check whether any of the patches still apply cleanly after an upstream bump.
+
+## Known NixOS integration requirements
+
+The upstream systemd unit and udev rules are included in the derivation output
+but are **not** wired up automatically — you need to install them via your
+NixOS configuration. A full integration also needs:
+
+- `~/.local/bin/xr_driver_cli` symlink (the GNOME extension's keyboard toggle
+  looks for the CLI at `$XDG_BIN_HOME/xr_driver_cli` then `/usr/bin/xr_driver_cli`)
+- `fs.protected_regular=1` workaround: `/dev/shm` state files are created by
+  `xrDriver`; if another user's stale files exist, `fopen(..., O_CREAT)` fails
+  silently (fixed by `state-null-check.patch`) but the files still need cleaning
+  before restart
+
+## Extension debugging
+
+Logs: `~/.local/state/breezy_gnome/logs/gjs/YYYY-MM-DD.log` (not the journal).
+
+Enable verbose output:
+```bash
+gsettings set com.xronlinux.BreezyDesktop debug true
+```
+
+"Ready, enabling XR effect" = effect activated successfully.
+"device stream not being received" = `breezy_desktop_running` stayed false,
+meaning the driver didn't signal readiness (check `xrDriver` logs / licence fetch).
