@@ -7,7 +7,11 @@
         pkgs.breezy-desktop
         (pkgs.writeShellApplication {
           name = "breezy-diag";
-          runtimeInputs = with pkgs; [ xxd systemd coreutils ];
+          runtimeInputs = with pkgs; [
+            xxd
+            systemd
+            coreutils
+          ];
           text = ''
             echo "=== XR Driver State ==="
             cat /dev/shm/xr_driver_state 2>/dev/null || echo "(no state file)"
@@ -188,13 +192,17 @@
       # file. A user service can't rm other users' files, so we use a
       # system-level template service invoked by a user-level ExecStartPre
       # via sudo. The sudo rule is scoped to just this one script.
-      security.sudo.extraRules = [{
-        groups = [ "users" ];
-        commands = [{
-          command = "/run/current-system/sw/bin/systemctl start xr-driver-cleanup@*";
-          options = [ "NOPASSWD" ];
-        }];
-      }];
+      security.sudo.extraRules = [
+        {
+          groups = [ "users" ];
+          commands = [
+            {
+              command = "/run/current-system/sw/bin/systemctl start xr-driver-cleanup@*";
+              options = [ "NOPASSWD" ];
+            }
+          ];
+        }
+      ];
 
       systemd.services."xr-driver-cleanup@" = {
         description = "Clean stale xr-driver IPC files for %i";
@@ -241,136 +249,138 @@
       # Since we install breezy-desktop via Nix (the tarball binary
       # won't run on NixOS without nix-ld), we shim these checks so
       # the plugin accepts the system-managed driver.
-      system.activationScripts.breezyDeckyShim = let
-        pluginDir = "/var/lib/decky-loader/plugins/decky-XRGaming";
-        settingsDir = "/var/lib/decky-loader/settings/decky-XRGaming";
-        deckHome = "/home/deck";
-      in ''
-        # Only run if the XRGaming plugin is installed
-        if [ -d "${pluginDir}" ]; then
-          # Read the plugin version from package.json
-          plugin_version=$(${lib.getExe pkgs.jq} -r '.version' "${pluginDir}/package.json" 2>/dev/null || echo "")
-          if [ -z "$plugin_version" ]; then
-            echo "breezyDeckyShim: could not read plugin version, skipping"
-          else
-            tarball="${pluginDir}/bin/breezyVulkan-x86_64.steamos.tar.gz"
+      system.activationScripts.breezyDeckyShim =
+        let
+          pluginDir = "/var/lib/decky-loader/plugins/decky-XRGaming";
+          settingsDir = "/var/lib/decky-loader/settings/decky-XRGaming";
+          deckHome = "/home/deck";
+        in
+        ''
+                  # Only run if the XRGaming plugin is installed
+                  if [ -d "${pluginDir}" ]; then
+                    # Read the plugin version from package.json
+                    plugin_version=$(${lib.getExe pkgs.jq} -r '.version' "${pluginDir}/package.json" 2>/dev/null || echo "")
+                    if [ -z "$plugin_version" ]; then
+                      echo "breezyDeckyShim: could not read plugin version, skipping"
+                    else
+                      tarball="${pluginDir}/bin/breezyVulkan-x86_64.steamos.tar.gz"
 
-            # Extract the manifest from the bundled tarball
-            manifest_dir="${deckHome}/.local/share/breezy_vulkan"
-            mkdir -p "$manifest_dir"
-            ${pkgs.gnutar}/bin/tar xzf "$tarball" -C "$manifest_dir" --strip-components=1 breezy_vulkan/manifest 2>/dev/null || true
+                      # Extract the manifest from the bundled tarball
+                      manifest_dir="${deckHome}/.local/share/breezy_vulkan"
+                      mkdir -p "$manifest_dir"
+                      ${pkgs.gnutar}/bin/tar xzf "$tarball" -C "$manifest_dir" --strip-components=1 breezy_vulkan/manifest 2>/dev/null || true
 
-            # Set up vkBasalt Vulkan layer for gamescope (Steam/gaming mode).
-            # Libs, config, and shaders go in deck's home. The Vulkan layer
-            # JSON is installed system-wide (see environment.etc below)
-            # because Steam recreates ~/.local/share/vulkan/implicit_layer.d/
-            # at login, wiping any user-placed files.
-            tmp_extract=$(mktemp -d)
-            ${pkgs.gnutar}/bin/tar xzf "$tarball" -C "$tmp_extract" 2>/dev/null || true
-            bv="$tmp_extract/breezy_vulkan"
-            if [ -d "$bv" ]; then
-              lib_dir="${deckHome}/.local/lib"
-              lib32_dir="${deckHome}/.local/lib32"
-              reshade_dir="${deckHome}/.config/reshade"
-              vkbasalt_dir="${deckHome}/.config/vkBasalt"
-              gamescope_reshade="${deckHome}/.local/share/gamescope/reshade"
+                      # Set up vkBasalt Vulkan layer for gamescope (Steam/gaming mode).
+                      # Libs, config, and shaders go in deck's home. The Vulkan layer
+                      # JSON is installed system-wide (see environment.etc below)
+                      # because Steam recreates ~/.local/share/vulkan/implicit_layer.d/
+                      # at login, wiping any user-placed files.
+                      tmp_extract=$(mktemp -d)
+                      ${pkgs.gnutar}/bin/tar xzf "$tarball" -C "$tmp_extract" 2>/dev/null || true
+                      bv="$tmp_extract/breezy_vulkan"
+                      if [ -d "$bv" ]; then
+                        lib_dir="${deckHome}/.local/lib"
+                        lib32_dir="${deckHome}/.local/lib32"
+                        reshade_dir="${deckHome}/.config/reshade"
+                        vkbasalt_dir="${deckHome}/.config/vkBasalt"
+                        gamescope_reshade="${deckHome}/.local/share/gamescope/reshade"
 
-              mkdir -p "$lib_dir" "$lib32_dir" \
-                       "$reshade_dir/Shaders" "$reshade_dir/Textures" \
-                       "$vkbasalt_dir" \
-                       "$gamescope_reshade/Shaders" "$gamescope_reshade/Textures"
+                        mkdir -p "$lib_dir" "$lib32_dir" \
+                                 "$reshade_dir/Shaders" "$reshade_dir/Textures" \
+                                 "$vkbasalt_dir" \
+                                 "$gamescope_reshade/Shaders" "$gamescope_reshade/Textures"
 
-              # vkBasalt shared libraries (FHS binaries — only work inside
-              # Steam's FHS sandbox where libX11/libstdc++ are available)
-              cp "$bv/vkBasalt.64/libvkbasalt.so" "$lib_dir/"
-              cp "$bv/vkBasalt.32/libvkbasalt.so" "$lib32_dir/"
+                        # vkBasalt shared libraries (FHS binaries — only work inside
+                        # Steam's FHS sandbox where libX11/libstdc++ are available)
+                        cp "$bv/vkBasalt.64/libvkbasalt.so" "$lib_dir/"
+                        cp "$bv/vkBasalt.32/libvkbasalt.so" "$lib32_dir/"
 
-              # vkBasalt config
-              ${pkgs.gnused}/bin/sed \
-                -e "s|/path/to/reshade-shaders|$reshade_dir|" \
-                -e "s|/path/to/sombrero|$reshade_dir/Shaders/Sombrero.frag|" \
-                "$bv/config/vkBasalt.conf" > "$vkbasalt_dir/vkBasalt.conf"
+                        # vkBasalt config
+                        ${pkgs.gnused}/bin/sed \
+                          -e "s|/path/to/reshade-shaders|$reshade_dir|" \
+                          -e "s|/path/to/sombrero|$reshade_dir/Shaders/Sombrero.frag|" \
+                          "$bv/config/vkBasalt.conf" > "$vkbasalt_dir/vkBasalt.conf"
 
-              # Reshade shaders and textures
-              cp "$bv"/*.frag "$bv"/*.fx* "$reshade_dir/Shaders/" 2>/dev/null || true
-              cp "$bv"/*.png "$reshade_dir/Textures/" 2>/dev/null || true
+                        # Reshade shaders and textures
+                        cp "$bv"/*.frag "$bv"/*.fx* "$reshade_dir/Shaders/" 2>/dev/null || true
+                        cp "$bv"/*.png "$reshade_dir/Textures/" 2>/dev/null || true
 
-              # Gamescope reshade shaders and textures
-              cp "$bv"/*.frag "$bv"/*.fx* "$gamescope_reshade/Shaders/" 2>/dev/null || true
-              cp "$bv"/*.png "$gamescope_reshade/Textures/" 2>/dev/null || true
-            fi
-            rm -rf "$tmp_extract"
-            manifest_checksum=$(sha256sum "$manifest_dir/manifest" 2>/dev/null | cut -d' ' -f1 || echo "")
+                        # Gamescope reshade shaders and textures
+                        cp "$bv"/*.frag "$bv"/*.fx* "$gamescope_reshade/Shaders/" 2>/dev/null || true
+                        cp "$bv"/*.png "$gamescope_reshade/Textures/" 2>/dev/null || true
+                      fi
+                      rm -rf "$tmp_extract"
+                      manifest_checksum=$(sha256sum "$manifest_dir/manifest" 2>/dev/null | cut -d' ' -f1 || echo "")
 
-            # Create the verification shim
-            bin_dir="${deckHome}/.local/bin"
-            mkdir -p "$bin_dir"
-            cat > "$bin_dir/breezy_vulkan_verify" << 'VERIFY'
-#!/bin/sh
-echo "Verification succeeded"
-VERIFY
-            chmod 755 "$bin_dir/breezy_vulkan_verify"
+                      # Create the verification shim
+                      bin_dir="${deckHome}/.local/bin"
+                      mkdir -p "$bin_dir"
+                      cat > "$bin_dir/breezy_vulkan_verify" << 'VERIFY'
+          #!/bin/sh
+          echo "Verification succeeded"
+          VERIFY
+                      chmod 755 "$bin_dir/breezy_vulkan_verify"
 
-            # Pre-populate plugin settings so it accepts the NixOS install
-            mkdir -p "${settingsDir}"
-            cat > "${settingsDir}/settings.json" << SETTINGS
-{
-  "installed_from_plugin_version": "$plugin_version",
-  "manifest_checksum": "$manifest_checksum"
-}
-SETTINGS
+                      # Pre-populate plugin settings so it accepts the NixOS install
+                      mkdir -p "${settingsDir}"
+                      cat > "${settingsDir}/settings.json" << SETTINGS
+          {
+            "installed_from_plugin_version": "$plugin_version",
+            "manifest_checksum": "$manifest_checksum"
+          }
+          SETTINGS
 
-            # Patch plugin Python files to work on NixOS. Always patch
-            # from .orig backups so re-running is idempotent.
-            deck_uid=$(id -u deck 2>/dev/null || echo "1000")
-            for py_file in \
-              "${pluginDir}/main.py" \
-              "${pluginDir}/PyXRLinuxDriverIPC/xrdriveripc.py"
-            do
-              if [ -f "$py_file" ]; then
-                if [ ! -f "$py_file.orig" ]; then
-                  cp "$py_file" "$py_file.orig"
-                fi
-                cp "$py_file.orig" "$py_file"
-                ${pkgs.gnused}/bin/sed -i "s|/run/user/1000|/run/user/$deck_uid|g" "$py_file"
-              fi
-            done
+                      # Patch plugin Python files to work on NixOS. Always patch
+                      # from .orig backups so re-running is idempotent.
+                      deck_uid=$(id -u deck 2>/dev/null || echo "1000")
+                      for py_file in \
+                        "${pluginDir}/main.py" \
+                        "${pluginDir}/PyXRLinuxDriverIPC/xrdriveripc.py"
+                      do
+                        if [ -f "$py_file" ]; then
+                          if [ ! -f "$py_file.orig" ]; then
+                            cp "$py_file" "$py_file.orig"
+                          fi
+                          cp "$py_file.orig" "$py_file"
+                          ${pkgs.gnused}/bin/sed -i "s|/run/user/1000|/run/user/$deck_uid|g" "$py_file"
+                        fi
+                      done
 
-            # Patch main.py: replace is_driver_running (needs user bus at
-            # boot) with a unit-file existence check.
-            ${pkgs.python3}/bin/python3 - "${pluginDir}/main.py" << 'PYEOF'
-import re, sys
-path = sys.argv[1]
-with open(path) as f:
-    src = f.read()
-src = re.sub(
-    r"(    async def is_driver_running\(self\):)\n.*?(?=\n    async def )",
-    "\\1\n"
-    "        import glob\n"
-    "        return bool(glob.glob('/etc/systemd/user/xr-driver.service'))\n",
-    src, count=1, flags=re.DOTALL,
-)
-with open(path, "w") as f:
-    f.write(src)
-PYEOF
+                      # Patch main.py: replace is_driver_running (needs user bus at
+                      # boot) with a unit-file existence check.
+                      ${pkgs.python3}/bin/python3 - "${pluginDir}/main.py" << 'PYEOF'
+          import re, sys
+          path = sys.argv[1]
+          with open(path) as f:
+              src = f.read()
+          src = re.sub(
+              r"(    async def is_driver_running\(self\):)\n.*?(?=\n    async def )",
+              "\\1\n"
+              "        import glob\n"
+              "        return bool(glob.glob('/etc/systemd/user/xr-driver.service'))\n",
+              src, count=1, flags=re.DOTALL,
+          )
+          with open(path, "w") as f:
+              f.write(src)
+          PYEOF
 
 
-            # Remove stale no-autostart drop-in from earlier config
-            rm -f "${deckHome}/.config/systemd/user/xr-driver.service.d/no-autostart.conf"
+                      # Remove stale no-autostart drop-in from earlier config
+                      rm -f "${deckHome}/.config/systemd/user/xr-driver.service.d/no-autostart.conf"
 
-            # Clean up stale /tmp IPC files from other users. The xrDriver
-            # binary opens these with O_CREAT, which fails under
-            # fs.protected_regular=1 if the file is owned by a different
-            # user in a sticky-bit directory (/tmp).
-            rm -f /tmp/shader_runtime_* /dev/shm/xr_driver_control /dev/shm/breezy_desktop_imu
+                      # Clean up stale /tmp IPC files from other users. The xrDriver
+                      # binary opens these with O_CREAT, which fails under
+                      # fs.protected_regular=1 if the file is owned by a different
+                      # user in a sticky-bit directory (/tmp).
+                      rm -f /tmp/shader_runtime_* /dev/shm/xr_driver_control /dev/shm/breezy_desktop_imu
 
-            # Fix ownership
-            chown -R deck:users "${deckHome}/.local"
-            chown -R deck:users "${settingsDir}"
+                      # Fix ownership
+                      chown -R deck:users "${deckHome}/.local"
+                      chown -R deck:users "${settingsDir}"
 
-            echo "breezyDeckyShim: configured for plugin v$plugin_version (deck uid=$deck_uid)"
-          fi
-        fi
-      '';
+                      echo "breezyDeckyShim: configured for plugin v$plugin_version (deck uid=$deck_uid)"
+                    fi
+                  fi
+        '';
     };
 }

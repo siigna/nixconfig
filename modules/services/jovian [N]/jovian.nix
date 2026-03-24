@@ -109,19 +109,22 @@
       # Pin deck's GDM session to gamescope-wayland so it doesn't fall back to
       # GNOME when no session preference has been stored by AccountsService.
       system.activationScripts.deckGdmSession = ''
-        mkdir -p /var/lib/AccountsService/users
-        cat > /var/lib/AccountsService/users/deck << 'EOF'
-[User]
-Session=gamescope-wayland
-SystemAccount=false
-EOF
+                mkdir -p /var/lib/AccountsService/users
+                cat > /var/lib/AccountsService/users/deck << 'EOF'
+        [User]
+        Session=gamescope-wayland
+        SystemAccount=false
+        EOF
       '';
 
       users.users.deck = {
         hashedPassword = "REDACTED";
         isNormalUser = true;
         shell = pkgs.bash;
-        extraGroups = [ "networkmanager" "nopasswdlogin" ];
+        extraGroups = [
+          "networkmanager"
+          "nopasswdlogin"
+        ];
       };
 
       # The XRGaming plugin deletes LD_LIBRARY_PATH from the subprocess env

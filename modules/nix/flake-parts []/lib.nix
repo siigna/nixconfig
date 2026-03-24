@@ -27,7 +27,8 @@
         };
       };
 
-      mkNixosTracked = system: name:
+      mkNixosTracked =
+        system: name:
         let
           # Patch our own nixpkgs (same commit as the regular build) with the
           # tracking infrastructure, so tracked builds share package store paths
@@ -40,11 +41,16 @@
           # by importing eval-config.nix with an extended lib. Replicate that here
           # using the patched source so trackDependencies is supported.
           patchedLib = import "${nixpkgsPatched}/lib";
-          nixosSystem = args: import "${nixpkgsPatched}/nixos/lib/eval-config.nix" ({
-            lib = patchedLib;
-            system = null;
-            modules = args.modules or [ ];
-          } // builtins.removeAttrs args [ "modules" ]);
+          nixosSystem =
+            args:
+            import "${nixpkgsPatched}/nixos/lib/eval-config.nix" (
+              {
+                lib = patchedLib;
+                system = null;
+                modules = args.modules or [ ];
+              }
+              // builtins.removeAttrs args [ "modules" ]
+            );
         in
         {
           "${name}-tracked" = nixosSystem {

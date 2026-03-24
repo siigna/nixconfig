@@ -2,7 +2,8 @@
   symlinkJoin,
   callPackage,
   fetchgit,
-}: let
+}:
+let
   source = {
     pname = "breezy-desktop";
     version = "v2.9.11";
@@ -18,7 +19,8 @@
   };
   xrlinuxdriver = callPackage ./xrlinuxdriver.nix { inherit source; };
   breezy-gnome = callPackage ./breezy-gnome.nix { inherit xrlinuxdriver source; };
-in symlinkJoin {
+in
+symlinkJoin {
   name = "breezy-desktop";
   paths = [
     breezy-gnome

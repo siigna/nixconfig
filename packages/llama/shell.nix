@@ -1,5 +1,6 @@
 # https://github.com/nix-community/gomod2nix/blob/master/docs/getting-started.md#using-niv
-{ pkgs ? (
+{
+  pkgs ? (
     let
       sources = import ./nix/sources.nix;
     in
@@ -8,7 +9,7 @@
         (import "${sources.gomod2nix}/overlay.nix")
       ];
     }
-  )
+  ),
 }:
 
 let

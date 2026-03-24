@@ -32,21 +32,30 @@
           system = "x86_64-linux";
           sshUser = "nix-ssh";
           maxJobs = 4;
-          supportedFeatures = [ "nix-command" "big-parallel" ];
+          supportedFeatures = [
+            "nix-command"
+            "big-parallel"
+          ];
           speedFactor = 4;
         }
         {
           hostName = "eu.nixbuild.net";
           system = "x86_64-linux";
           maxJobs = 100;
-          supportedFeatures = [ "benchmark" "big-parallel" ];
+          supportedFeatures = [
+            "benchmark"
+            "big-parallel"
+          ];
           speedFactor = 1;
         }
         {
           hostName = "eu.nixbuild.net";
           system = "i686-linux";
           maxJobs = 100;
-          supportedFeatures = [ "benchmark" "big-parallel" ];
+          supportedFeatures = [
+            "benchmark"
+            "big-parallel"
+          ];
           speedFactor = 1;
         }
       ];

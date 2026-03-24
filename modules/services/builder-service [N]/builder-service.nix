@@ -1,7 +1,12 @@
 { ... }:
 {
   flake.modules.nixos.builder-service =
-    { pkgs, lib, config, ... }:
+    {
+      pkgs,
+      lib,
+      config,
+      ...
+    }:
     {
       options.nixbuilder.authorizedKeys = lib.mkOption {
         type = lib.types.listOf lib.types.str;
@@ -40,8 +45,14 @@
         users.users.root.openssh.authorizedKeys.keys = config.nixbuilder.authorizedKeys;
 
         nix.settings = {
-          experimental-features = [ "nix-command" "flakes" ];
-          trusted-users = [ "root" "nix-ssh" ];
+          experimental-features = [
+            "nix-command"
+            "flakes"
+          ];
+          trusted-users = [
+            "root"
+            "nix-ssh"
+          ];
           # Let the builder fetch missing substitutes itself rather than
           # requiring nixdeck to upload every closure dependency.
           builders-use-substitutes = true;

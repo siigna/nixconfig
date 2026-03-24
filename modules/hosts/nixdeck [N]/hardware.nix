@@ -1,11 +1,21 @@
 { ... }:
 {
   flake.modules.nixos.hardware-nixdeck =
-    { config, lib, modulesPath, ... }:
+    {
+      config,
+      lib,
+      modulesPath,
+      ...
+    }:
     {
       imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
 
-      boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "usbhid" "sdhci_pci" ];
+      boot.initrd.availableKernelModules = [
+        "nvme"
+        "xhci_pci"
+        "usbhid"
+        "sdhci_pci"
+      ];
       boot.initrd.kernelModules = [ ];
       boot.kernelModules = [ "kvm-amd" ];
       boot.extraModulePackages = [ ];
@@ -23,7 +33,14 @@
       fileSystems."/mnt/win" = {
         device = "/dev/disk/by-uuid/2086FDAB86FD8218";
         fsType = "lowntfs-3g";
-        options = [ "rw" "uid=1000" "gid=100" "user" "exec" "umask=000" ];
+        options = [
+          "rw"
+          "uid=1000"
+          "gid=100"
+          "user"
+          "exec"
+          "umask=000"
+        ];
       };
 
       swapDevices = [ { device = "/dev/disk/by-uuid/716413ae-f194-4ad1-a163-ab5da7652ae1"; } ];

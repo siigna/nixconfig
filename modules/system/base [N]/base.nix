@@ -1,7 +1,12 @@
 { inputs, ... }:
 {
   flake.modules.nixos.nixos-base =
-    { pkgs, lib, config, ... }:
+    {
+      pkgs,
+      lib,
+      config,
+      ...
+    }:
     {
       imports = [ inputs.home-manager.nixosModules.home-manager ];
 
@@ -61,8 +66,18 @@
         networking.networkmanager.enable = true;
         networking.firewall = {
           # KDE Connect / GSConnect
-          allowedTCPPortRanges = [ { from = 1714; to = 1764; } ];
-          allowedUDPPortRanges = [ { from = 1714; to = 1764; } ];
+          allowedTCPPortRanges = [
+            {
+              from = 1714;
+              to = 1764;
+            }
+          ];
+          allowedUDPPortRanges = [
+            {
+              from = 1714;
+              to = 1764;
+            }
+          ];
           # Evidence.dev dev server
           allowedTCPPorts = [ 3000 ];
         };
@@ -167,8 +182,14 @@
         };
 
         nix.settings = {
-          experimental-features = [ "nix-command" "flakes" ];
-          trusted-users = [ "root" "siigna" ];
+          experimental-features = [
+            "nix-command"
+            "flakes"
+          ];
+          trusted-users = [
+            "root"
+            "siigna"
+          ];
           auto-optimise-store = true;
         };
 
