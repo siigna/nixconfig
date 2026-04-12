@@ -124,6 +124,8 @@
         android-tools
         discord
         nix-sweep
+        wireshark
+        tshark
         (python313.withPackages (
           ps: with ps; [
             numpy
