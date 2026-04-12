@@ -19,6 +19,7 @@
       breezy
       intellij
       xreal-one
+      obdium
     ];
     nixdeck.useGrub = false;
   };

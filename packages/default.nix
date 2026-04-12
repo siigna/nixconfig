@@ -1,5 +1,6 @@
 self: super: {
   adi1090x-plymouth = super.callPackage ./adi1090x-plymouth { };
+  obdium = super.callPackage ./obdium { };
   ar-compositor = super.callPackage ./ar-compositor { };
   breezy-desktop = super.callPackage ./breezy { };
   xreal-one-ctl = super.callPackage ./xreal-one-ctl { };
