@@ -126,6 +126,7 @@
         wireshark
         tshark
         opentofu
+        mcp-nixos
         (python313.withPackages (
           ps: with ps; [
             numpy

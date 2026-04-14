@@ -23,6 +23,10 @@
       url = "path:./packages";
     };
 
+    # Pinned nixpkgs for packages requiring webkitgtk-4.0 (removed in unstable ~2025-10-08).
+    # Last commit with a real webkitgtk_4_0 (libsoup2-based, Tauri v1 / wry <0.38).
+    nixpkgs-webkitgtk40.url = "github:nixos/nixpkgs/10924657b0dc";
+
     # Always-up-to-date Claude Code (updated hourly, ahead of nixpkgs)
     claude-code-nix.url = "github:sadjow/claude-code-nix";
 

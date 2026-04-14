@@ -17,6 +17,21 @@
         nixpkgs.overlays = [
           (import inputs.packages)
           inputs.claude-code-nix.overlays.default
+          # obdium (Tauri v1) requires webkitgtk-4.0 + libsoup-2.4, both removed/insecure
+          # in current nixpkgs. Build it from a pinned nixpkgs that still has them.
+          (final: _: {
+            obdium =
+              let
+                legacyPkgs = import inputs.nixpkgs-webkitgtk40 {
+                  inherit (final.stdenv.hostPlatform) system;
+                  config.allowUnfree = true;
+                  # webkitgtk_4_0 pulls in libsoup-2.4 (EOL but the only option for
+                  # Tauri v1 / wry <0.38 which hardcodes the webkit2gtk-4.0 API).
+                  config.permittedInsecurePackages = [ "libsoup-2.74.3" ];
+                };
+              in
+              legacyPkgs.callPackage (inputs.packages + "/obdium") { };
+          })
         ];
 
         # TODO: migrate Tailscale auth key to agenix secrets management

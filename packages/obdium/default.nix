@@ -5,15 +5,17 @@
 # feature. The three bundled SQLite databases are installed to
 # $out/share/obdium/data/ and a wrapper sets CWD so the relative
 # ./data/*.sqlite paths in the Rust source resolve correctly.
+#
+# NOTE: Tauri v1 (wry 0.24) requires webkitgtk-4.0 + libsoup-2.4, both of which
+# were removed/marked insecure in nixpkgs ~2025-10-08. This package must be called
+# from a pinned nixpkgs that still has them — see the obdium overlay in base.nix.
 {
   lib,
   rustPlatform,
   fetchFromGitHub,
   pkg-config,
-  wrapGAppsHook3,
-  webkitgtk_4_1,
-  libsoup_2_4,
-  libsoup_3,
+  wrapGAppsHook,
+  webkitgtk_4_0,
   gtk3,
   glib-networking,
   openssl,
@@ -48,13 +50,11 @@ rustPlatform.buildRustPackage {
 
   nativeBuildInputs = [
     pkg-config
-    wrapGAppsHook3
+    wrapGAppsHook
   ];
 
   buildInputs = [
-    webkitgtk_4_1
-    libsoup_2_4
-    libsoup_3
+    webkitgtk_4_0
     gtk3
     glib-networking
     openssl
@@ -86,9 +86,5 @@ rustPlatform.buildRustPackage {
     homepage = "https://github.com/provrb/obdium";
     mainProgram = "obdium";
     platforms = platforms.linux;
-    # Broken: uses Tauri v1 → wry 0.24 → webkit2gtk-sys 0.18 which requires
-    # webkit2gtk-4.0 (removed from nixpkgs) + libsoup-2.4 (EOL, marked insecure).
-    # Fix: upstream must migrate to Tauri v2 / wry 0.38+ (webkit2gtk-4.1 / soup3).
-    broken = true;
   };
 }

@@ -294,6 +294,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-webkitgtk40": {
+      "locked": {
+        "lastModified": 1758288525,
+        "narHash": "sha256-ZFOVgGJQm4RPY3Rr+UUEAk8A4tgWryop6qEtodTz8UU=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "10924657b0dc94b36e4626b41baf9edbd2e62c06",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "10924657b0dc",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1769089682,
@@ -346,6 +362,7 @@
         "nixos-config-tui": "nixos-config-tui",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-tracking": "nixpkgs-tracking",
+        "nixpkgs-webkitgtk40": "nixpkgs-webkitgtk40",
         "packages": "packages"
       }
     },
