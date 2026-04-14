@@ -10,8 +10,10 @@
   rustPlatform,
   fetchFromGitHub,
   pkg-config,
-  wrapGAppsHook,
-  webkitgtk_4_0,
+  wrapGAppsHook3,
+  webkitgtk_4_1,
+  libsoup_2_4,
+  libsoup_3,
   gtk3,
   glib-networking,
   openssl,
@@ -31,7 +33,12 @@ rustPlatform.buildRustPackage {
     hash = "sha256-iuvsKOIZPUMwZZxUdEtng/SHWb3+dHy64ZLXxb/dmGI=";
   };
 
-  cargoRoot = "backend";
+  # The Cargo workspace lives in backend/, not the repo root.
+  # postUnpack shifts sourceRoot so all Cargo hooks (vendor setup, build)
+  # run from there; ../frontend is still reachable for the asset embed.
+  postUnpack = ''
+    sourceRoot=$sourceRoot/backend
+  '';
   cargoLock = {
     lockFile = ./Cargo.lock;
   };
@@ -41,11 +48,13 @@ rustPlatform.buildRustPackage {
 
   nativeBuildInputs = [
     pkg-config
-    wrapGAppsHook
+    wrapGAppsHook3
   ];
 
   buildInputs = [
-    webkitgtk_4_0
+    webkitgtk_4_1
+    libsoup_2_4
+    libsoup_3
     gtk3
     glib-networking
     openssl
@@ -77,5 +86,9 @@ rustPlatform.buildRustPackage {
     homepage = "https://github.com/provrb/obdium";
     mainProgram = "obdium";
     platforms = platforms.linux;
+    # Broken: uses Tauri v1 → wry 0.24 → webkit2gtk-sys 0.18 which requires
+    # webkit2gtk-4.0 (removed from nixpkgs) + libsoup-2.4 (EOL, marked insecure).
+    # Fix: upstream must migrate to Tauri v2 / wry 0.38+ (webkit2gtk-4.1 / soup3).
+    broken = true;
   };
 }

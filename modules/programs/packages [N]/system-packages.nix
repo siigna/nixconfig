@@ -91,7 +91,6 @@
         winetricks
         qrencode
         zint-qt
-        opentofu
         zip
         cargo-lambda
         rustup
@@ -126,6 +125,7 @@
         nix-sweep
         wireshark
         tshark
+        opentofu
         (python313.withPackages (
           ps: with ps; [
             numpy

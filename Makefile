@@ -1,4 +1,5 @@
 FLAKE ?= 1
+NOBUILDERS ?= 0
 
 ifeq ($(FLAKE),1)
 FLAKE_ARG = --flake .#nixdeck
@@ -6,11 +7,17 @@ else
 FLAKE_ARG =
 endif
 
+ifeq ($(NOBUILDERS),1)
+BUILDERS_ARG = --builders ''
+else
+BUILDERS_ARG =
+endif
+
 build:
-	nixos-rebuild build $(FLAKE_ARG)
+	nixos-rebuild build $(FLAKE_ARG) $(BUILDERS_ARG)
 
 switch:
-	sudo nixos-rebuild switch $(FLAKE_ARG)
+	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG)
 
 boot:
 	sudo nixos-rebuild boot $(FLAKE_ARG)
