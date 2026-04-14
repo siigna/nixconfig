@@ -127,6 +127,7 @@
         tshark
         opentofu
         mcp-nixos
+        obdium
         (python313.withPackages (
           ps: with ps; [
             numpy
