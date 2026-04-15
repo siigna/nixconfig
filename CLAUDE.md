@@ -10,7 +10,10 @@ make switch   # build and activate immediately
 make boot     # build and activate on next boot only
 make update   # nix flake update (refresh flake.lock)
 
-make build FLAKE=0   # same targets but using /etc/nixos (legacy fallback)
+make build FLAKE=0      # same targets but using /etc/nixos (legacy fallback)
+make build NOBUILDERS=1 # build without distributed builders (bypasses nixbuild.net)
+make update-claude      # update only the claude-code-nix flake input
+make image-nixbuilder   # build a qcow2 image for the nixbuilder Proxmox VM
 ```
 
 To roll back without rebooting:
@@ -22,7 +25,7 @@ The flake directory can be anywhere — nothing hardcodes its location. All path
 
 ## Architecture
 
-This is a NixOS configuration for a single host (`nixdeck`, a Steam Deck) using the **Dendritic Pattern** with **flake-parts** + **import-tree**.
+This is a NixOS configuration for two hosts — `nixdeck` (Steam Deck) and `nixbuilder` (Proxmox VM used as a remote build machine) — using the **Dendritic Pattern** with **flake-parts** + **import-tree**.
 
 ### How it works
 
@@ -35,12 +38,17 @@ There are two kinds of files:
 
 The `flake.modules.nixos` option is enabled by `inputs.flake-parts.flakeModules.modules` (imported in `modules/nix/flake-parts []/lib.nix`). Registered modules become outputs at `outputs.modules.nixos.<name>`, accessible via `inputs.self.modules.nixos.<name>`.
 
-### Host wiring (`modules/hosts/nixdeck [N]/`)
+### Host wiring
 
+**`modules/hosts/nixdeck [N]/`** (Steam Deck):
 - `flake-parts.nix` — calls `mkNixos "x86_64-linux" "nixdeck"` to create the nixosConfiguration
 - `tracking-flake-parts.nix` — calls `mkNixosTracked "x86_64-linux" "nixdeck"` for the optional tracked build
 - `configuration.nix` — registers `flake.modules.nixos.nixdeck` importing all other named modules
 - `hardware.nix` — registers `flake.modules.nixos.hardware-nixdeck` (filesystems, kernel modules, AMD microcode)
+
+**`modules/hosts/nixbuilder [N]/`** (Proxmox build VM):
+- `flake-parts.nix` — calls `mkNixos "x86_64-linux" "nixbuilder"` (buildable as a qcow2 image via `make image-nixbuilder`)
+- `configuration.nix` — imports `builder-service` + `tailscale`; sets `nixbuilder.authorizedKeys` and a local `admin` user for bootstrap access
 
 ### Module naming convention
 
@@ -59,6 +67,12 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `nixbuild` | `services/nixbuild [N]/nixbuild.nix` — distributed builds via eu.nixbuild.net |
 | `siigna` | `users/siigna [N]/siigna.nix` — primary user, wheel + dev groups |
 | `breezy` | `programs/breezy [N]/breezy.nix` — Breezy Desktop XR driver + Decky plugin shim |
+| `xreal-one` | `programs/xreal-one [N]/xreal-one.nix` — XReal One AR glasses: xreal-one-ctl + ar-compositor, udev rules, plugdev group |
+| `obdium` | `programs/obdium [N]/obdium.nix` — OBD2 diagnostics app; adds siigna to `dialout` for ELM327 USB-serial adapters |
+| `steam-library` | `services/steam-library [N]/steam-library.nix` — shared Steam library at `/var/lib/steam-library` (siigna + deck users) |
+| `builder-service` | `services/builder-service [N]/builder-service.nix` — nix-ssh user + SSH daemon config for accepting remote builds |
+| `intellij` | `programs/intellij [N]/intellij.nix` — IntelliJ IDEA |
+| `radio` | `programs/radio [N]/radio.nix` — SDR / radio tools |
 
 ### jovian.nix notes
 
@@ -107,15 +121,46 @@ Breezy Desktop (XR glasses driver) is installed system-wide via Nix. The custom 
 
 **Root cause of GNOME side not working** (fixed by `startup-license-race.patch`): At startup, `main()` calls `update_config_from_file()` before `plugins.start()`. The `device_license` plugin makes a blocking network request, so when config is first parsed, `is_productivity_granted()` caches `false` → `bd_config->enabled = false` → IMU file never written with `enabled=true` → extension keepalive expires → `breezy_desktop_running` stays false → no XR effect. The fix re-reads config after `plugins.start()` so the feature check uses the fetched license.
 
+### xreal-one.nix notes
+
+`xreal-one-ctl` (from `packages/xreal-one-ctl/`) is a Rust CLI built from the [0xcaff/xr-tools](https://github.com/0xcaff/xr-tools) workspace. Primary use: `xreal_one_ctl enable-camera` turns on the XReal One Pro's passthrough eye camera, causing the device to reconnect and expose a UVC camera interface.
+
+`ar-compositor` (from `packages/ar-compositor/`) is a Python/GTK3/GStreamer app that composites the glasses camera feed with a Mutter ScreenCast desktop capture, with a live preview window and a Record button. Saves recordings to `~/Videos`.
+
+Both tools need USB access without sudo — the module adds udev rules for vendor ID `0x3318` (XReal) granting `plugdev` group access, and adds siigna to `plugdev`.
+
+### obdium.nix notes
+
+`obdium` (from `packages/obdium/`) is an OBD2 automotive diagnostics app. It requires `webkitgtk_4_0` (based on libsoup2 / Tauri v1 / wry <0.38), which was removed from nixpkgs-unstable around 2025-10-08. The package is built using `nixpkgs-webkitgtk40` (pinned to commit `10924657b0dc`), a flake input specifically added to preserve this dependency.
+
+The module adds siigna to the `dialout` group for access to ELM327 USB-serial adapters on `/dev/ttyUSB*`.
+
+### steam-library.nix notes
+
+Creates a `steam-library` group and a shared directory at `/var/lib/steam-library` (mode 2775, owned by root:steam-library). Both `siigna` and `deck` users are added to the group, allowing cross-user Steam library sharing between desktop and gaming sessions.
+
 ### Custom packages
 
-`packages/` is a nixpkgs overlay (flake input `packages`, `flake = false`). Currently provides `adi1090x-plymouth`. Applied in `nixos-base` via `nixpkgs.overlays = [ (import inputs.packages) ]`.
+`packages/` is a nixpkgs overlay (flake input `packages`, `flake = false`). Applied in `nixos-base` via `nixpkgs.overlays = [ (import inputs.packages) ]`.
+
+| Package | Path | Notes |
+|---|---|---|
+| `adi1090x-plymouth` | `packages/adi1090x-plymouth/` | Custom Plymouth theme |
+| `alsa-ucm-conf` | `packages/alsa-ucm-conf/` | ALSA UCM config overrides |
+| `ar-compositor` | `packages/ar-compositor/` | AR passthrough compositor for XReal One Pro (Python/GTK3/GStreamer) |
+| `breezy-gnome` | `packages/breezy/breezy-gnome.nix` | Breezy GNOME extension |
+| `xrlinuxdriver` | `packages/breezy/xrlinuxdriver.nix` | Patched Breezy XR driver binary |
+| `llama` | `packages/llama/` | llama.cpp (local LLM inference) |
+| `obdium` | `packages/obdium/` | OBD2 diagnostics app; built against pinned nixpkgs-webkitgtk40 |
+| `xreal-one-ctl` | `packages/xreal-one-ctl/` | CLI for XReal One AR glasses (Rust; from 0xcaff/xr-tools) |
+
+**Dual-nixpkgs strategy**: packages requiring `webkitgtk_4_0` (obdium, and breezy-gnome's build dependencies) accept a `pkgs-webkitgtk40` argument wired to the pinned nixpkgs. The overlay's `default.nix` passes it through so these packages build without polluting the main nixpkgs set.
 
 ### Option dependency tracking
 
 An optional `nixdeck-tracked` configuration uses [oddlama/nixos-config-tui](https://github.com/oddlama/nixos-config-tui) to track which NixOS options depend on which. Not for day-to-day use — useful for auditing changes or verifying a refactor didn't shift anything unintentionally.
 
-Uses two flake inputs: `nix-tracking` (patched nix evaluator binary) and `nixpkgs-tracking` (oddlama's fork, only used for the `nixos-config` TUI binary). The tracked system build itself patches our own nixpkgs via `nixos-config-tui` so it shares package store paths with the regular build — no double compilation of packages.
+Uses three flake inputs: `nix-tracking` (patched nix evaluator binary), `nixpkgs-tracking` (oddlama's fork, only used for the `nixos-config` TUI binary), and `nixos-config-tui` (patch files). The tracked system build itself patches our own nixpkgs via `nixos-config-tui` so it shares package store paths with the regular build — no double compilation of packages.
 
 ```bash
 make track-build          # build nixdeck-tracked (result → ./result)
