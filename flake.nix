@@ -30,6 +30,9 @@
     # Always-up-to-date Claude Code (updated hourly, ahead of nixpkgs)
     claude-code-nix.url = "github:sadjow/claude-code-nix";
 
+    # Always-up-to-date Codex CLI
+    codex-cli-nix.url = "github:sadjow/codex-cli-nix";
+
     # Patched nix evaluator with dependency-tracking builtins (for devShell)
     nix-tracking.url = "github:oddlama/nix/thunk-origins-v1";
 

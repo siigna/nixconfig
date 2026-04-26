@@ -17,6 +17,7 @@
         nixpkgs.overlays = [
           (import inputs.packages)
           inputs.claude-code-nix.overlays.default
+          inputs.codex-cli-nix.overlays.default
           # obdium (Tauri v1) requires webkitgtk-4.0 + libsoup-2.4, both removed/insecure
           # in current nixpkgs. Build it from a pinned nixpkgs that still has them.
           (final: _: {
@@ -174,6 +175,22 @@
         services.xserver.xkb.layout = "us";
         services.flatpak.enable = true;
         services.printing.enable = true;
+        services.printing.drivers = [ pkgs.epson-escpr ];
+        # Keep CUPS printer list deterministic; avoid transient DNS-SD auto-queues.
+        services.printing.browsed.enable = false;
+        hardware.printers = {
+          ensurePrinters = [
+            {
+              name = "Epson_ET_2803";
+              deviceUri = "ipp://172.31.5.242/ipp/print";
+              model = "epson-inkjet-printer-escpr/Epson-ET-2800_Series-epson-escpr-en.ppd";
+              ppdOptions = {
+                PageSize = "Letter";
+              };
+            }
+          ];
+          ensureDefaultPrinter = "Epson_ET_2803";
+        };
 
         hardware.bluetooth.package = pkgs.bluez;
         hardware.xpadneo.enable = true;
