@@ -22,6 +22,7 @@
         gjs
         dconf-editor
         gnome-tweaks
+        simple-scan
         gnumake
         google-chrome
         htop

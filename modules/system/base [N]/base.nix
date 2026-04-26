@@ -192,6 +192,11 @@
           ensureDefaultPrinter = "Epson_ET_2803";
         };
 
+        hardware.sane = {
+          enable = true;
+          extraBackends = [ pkgs.sane-airscan ];
+        };
+
         hardware.bluetooth.package = pkgs.bluez;
         hardware.xpadneo.enable = true;
 

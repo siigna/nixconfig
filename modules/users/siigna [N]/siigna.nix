@@ -14,6 +14,8 @@
           "adbusers"
           "dialout"
           "uucp"
+          "scanner"
+          "lp"
         ];
         packages = [ pkgs.home-manager ];
       };
