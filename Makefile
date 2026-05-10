@@ -14,10 +14,10 @@ BUILDERS_ARG =
 endif
 
 build:
-	nixos-rebuild build $(FLAKE_ARG) $(BUILDERS_ARG)
+	nixos-rebuild build $(FLAKE_ARG) $(BUILDERS_ARG) --impure
 
 switch:
-	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG)
+	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG) --impure
 
 boot:
 	sudo nixos-rebuild boot $(FLAKE_ARG)

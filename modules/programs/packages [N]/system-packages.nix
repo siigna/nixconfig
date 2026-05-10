@@ -56,6 +56,7 @@
         unzip
         usbutils
         vim
+        wl-clipboard
         virt-manager
         fluffychat
         adwaita-qt

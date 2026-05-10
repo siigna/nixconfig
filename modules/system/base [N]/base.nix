@@ -175,7 +175,10 @@
         services.xserver.xkb.layout = "us";
         services.flatpak.enable = true;
         services.printing.enable = true;
-        services.printing.drivers = [ pkgs.epson-escpr ];
+        services.printing.drivers = [
+          pkgs.epson-escpr
+          pkgs.fargo-dtc4250e-driver
+        ];
         # Keep CUPS printer list deterministic; avoid transient DNS-SD auto-queues.
         services.printing.browsed.enable = false;
         hardware.printers = {
@@ -190,6 +193,30 @@
             }
           ];
           ensureDefaultPrinter = "Epson_ET_2803";
+        };
+
+        # ensurePrinters only creates a printer once — it never updates the PPD.
+        # This service re-runs lpadmin with the absolute nix store PPD path on every
+        # boot and re-runs automatically when the driver package changes (unit hash
+        # change triggers systemd restart on nixos-rebuild switch).
+        systemd.services.cups-fargo-ppd = {
+          description = "Configure Fargo DTC4250e CUPS printer PPD";
+          wantedBy = [ "cups.service" ];
+          after = [ "cups.service" ];
+          bindsTo = [ "cups.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = toString (pkgs.writeShellScript "cups-fargo-ppd" ''
+              ${pkgs.cups}/bin/lpadmin \
+                -p Fargo_DTC4250e \
+                -v socket://172.31.5.2:9100 \
+                -P ${pkgs.fargo-dtc4250e-driver}/share/cups/model/DTC4250e.ppd \
+                -E \
+                -o PageSize=CR80 \
+                -o CardThickness=30
+            '');
+          };
         };
 
         hardware.sane = {
@@ -238,6 +265,7 @@
         # hidraw permissions for Teensy @ 16c0:0486
         services.udev.extraRules = ''
           ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="0486", TAG+="uaccess"
+          SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0801", ATTRS{idProduct}=="0003", TAG+="uaccess", MODE="0660"
         '';
 
         system.stateVersion = "22.11";
