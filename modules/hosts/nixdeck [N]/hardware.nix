@@ -32,14 +32,13 @@
 
       fileSystems."/mnt/win" = {
         device = "/dev/disk/by-uuid/2086FDAB86FD8218";
-        fsType = "lowntfs-3g";
+        fsType = "ntfs3";
         options = [
           "rw"
           "uid=1000"
           "gid=100"
-          "user"
-          "exec"
           "umask=000"
+          "nofail"
         ];
       };
 

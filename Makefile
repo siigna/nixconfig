@@ -20,7 +20,7 @@ switch:
 	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG) --impure
 
 boot:
-	sudo nixos-rebuild boot $(FLAKE_ARG)
+	sudo nixos-rebuild boot $(FLAKE_ARG) $(BUILDERS_ARG) --impure
 
 update:
 	nix flake update

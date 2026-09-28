@@ -46,6 +46,7 @@
           "fluffychat-linux-1.27.0"
           "ventoy-1.1.07"
           "ventoy-1.1.10"
+          "ventoy-1.1.17"
         ];
 
         boot = {
