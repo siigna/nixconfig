@@ -11,6 +11,7 @@
       system-packages
       tailscale
       nixbuild
+      nix-build-scratch
       bootnext
       siigna
       boucheblaster
