@@ -18,6 +18,7 @@
           (import inputs.packages)
           inputs.claude-code-nix.overlays.default
           inputs.codex-cli-nix.overlays.default
+          inputs.vesc-tool.overlays.default
           # obdium (Tauri v1) requires webkitgtk-4.0 + libsoup-2.4, both removed/insecure
           # in current nixpkgs. Build it from a pinned nixpkgs that still has them.
           (final: _: {

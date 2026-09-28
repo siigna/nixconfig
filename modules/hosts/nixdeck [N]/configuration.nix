@@ -21,6 +21,7 @@
       intellij
       xreal-one
       obdium
+      vesc-tool
     ];
     nixdeck.useGrub = false;
   };

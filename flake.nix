@@ -33,6 +33,12 @@
     # Always-up-to-date Codex CLI
     codex-cli-nix.url = "github:sadjow/codex-cli-nix";
 
+    # VESC Tool — motor controller IDE, packaged upstream as a flake
+    vesc-tool = {
+      url = "github:vedderb/vesc_tool";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Patched nix evaluator with dependency-tracking builtins (for devShell)
     nix-tracking.url = "github:oddlama/nix/thunk-origins-v1";
 
