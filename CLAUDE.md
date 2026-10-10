@@ -16,6 +16,11 @@ make update-claude      # update only the claude-code-nix flake input
 make image-nixbuilder   # build a qcow2 image for the nixbuilder Proxmox VM
 ```
 
+`build`/`switch`/`boot` always target `.#nixdeck`; `nixbuilder` is only built via
+`make image-nixbuilder` (or `nixos-rebuild --flake .#nixbuilder` by hand). Evaluation is pure — if a
+build ever demands `--impure`, something has grown an absolute path or `builtins.getEnv`; fix that
+rather than adding the flag back.
+
 To roll back without rebooting:
 ```bash
 nixos-rebuild switch --rollback
@@ -48,7 +53,11 @@ The `flake.modules.nixos` option is enabled by `inputs.flake-parts.flakeModules.
 
 **`modules/hosts/nixbuilder [N]/`** (Proxmox build VM):
 - `flake-parts.nix` — calls `mkNixos "x86_64-linux" "nixbuilder"` (buildable as a qcow2 image via `make image-nixbuilder`)
-- `configuration.nix` — imports `builder-service` + `tailscale`; sets `nixbuilder.authorizedKeys` and a local `admin` user for bootstrap access
+- `configuration.nix` — imports `hardware-nixbuilder` + `builder-service` + `tailscale`; sets `nixbuilder.authorizedKeys` and a local `admin` user for bootstrap access
+- `hardware.nix` — registers `flake.modules.nixos.hardware-nixbuilder` (root fs, growPartition, virtio initrd modules)
+
+`nixbuilder` does **not** import `nixos-base`, so it has no `system.stateVersion` and none of the
+shared nix settings.
 
 ### Module naming convention
 
@@ -73,6 +82,13 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `builder-service` | `services/builder-service [N]/builder-service.nix` — nix-ssh user + SSH daemon config for accepting remote builds |
 | `intellij` | `programs/intellij [N]/intellij.nix` — IntelliJ IDEA |
 | `radio` | `programs/radio [N]/radio.nix` — SDR / radio tools |
+| `vesc-tool` | `programs/vesc-tool [N]/vesc-tool.nix` — VESC motor-controller IDE; adds siigna to `dialout` for `/dev/ttyACM*` |
+| `fonts` | `programs/fonts [N]/fonts.nix` — comic-relief, font-awesome |
+| `hosts-file` | `services/hosts-file [N]/hosts-file.nix` — static `networking.extraHosts` for LAN boxes (proxmox, nixmox, octopi) |
+| `gdm-nopasswdlogin` | `services/gdm-nopasswdlogin [N]/gdm-nopasswdlogin.nix` — `nopasswdlogin` group + GDM PAM rule |
+| `bootnext` | `services/bootnext [N]/bootnext.nix` — oneshot setting UEFI BootNext back to the current entry (SteamOS) |
+| `nix-build-scratch` | `system/nix-build-scratch [N]/nix-build-scratch.nix` — build sandbox scratch on an ext4 image inside the NTFS volume |
+| `boucheblaster` | `users/boucheblaster [N]/boucheblaster.nix` — secondary user (dialout, networkmanager, plugdev, uucp) |
 
 ### jovian.nix notes
 
@@ -93,6 +109,10 @@ Breezy Desktop (XR glasses driver) is installed system-wide via Nix. The custom 
 3. **`state-null-check.patch`** — prevents segfault in `write_state` when `fopen` returns NULL due to `fs.protected_regular=1`
 4. **`reenable-device-reconnect.patch`** — calls `exit(0)` on runtime re-enable so systemd restarts the driver with a fresh device pipeline (the device thread has race conditions that prevent reconnection otherwise)
 5. **`startup-license-race.patch`** — re-reads config after `plugins.start()` in `main()` to fix a startup race where `is_productivity_granted()` is cached as `false` before the license is fetched. Without this, `breezy_desktop.enabled` stays `false` on startup (even with valid trial/license), IMU file never updates, and the GNOME extension never activates.
+
+`breezy-gnome.nix` applies one patch of its own, `window-scrollable.patch`, via an explicit
+`patch -p1` (not `patches`) because the source tree contains symlinks that `patch`/`substituteInPlace`
+would follow.
 
 **Decky XRGaming plugin shim** (`breezyDeckyShim` activation script):
 - Patches `main.py`: replaces `is_driver_running()` (which needs deck's D-Bus session, absent at boot) with a unit-file existence check; fixes hardcoded UID 1000 → deck's actual UID (1001).
@@ -139,22 +159,72 @@ The module adds siigna to the `dialout` group for access to ELM327 USB-serial ad
 
 Creates a `steam-library` group and a shared directory at `/var/lib/steam-library` (mode 2775, owned by root:steam-library). Both `siigna` and `deck` users are added to the group, allowing cross-user Steam library sharing between desktop and gaming sessions.
 
+### gdm-nopasswdlogin.nix notes
+
+The PAM rule must go through `security.pam.services.gdm-password.rules`, not `.text`. The generated
+stack is `lib.mkDefault`, so any plain `text` definition (including `mkBefore`, which changes order
+but not priority) discards it entirely — gdm-password then falls through to `/etc/pam.d/other`
+(pam_warn + pam_deny) and every GDM login fails, including deck's autologin.
+
+### nix-build-scratch.nix notes
+
+`/var/nix-build` is an ext4 image on `/mnt/win` (nvme0n1p3), because root is full of the Steam library
+while large builds (Valve kernel peaks ~43G) need scratch. An image rather than ntfs3 directly: build
+sandboxes need real ownership, hardlinks and device nodes. Scratch only, never the store — mounted
+`nofail` so a mount failure breaks a build, not boot. Recreate with `fallocate` + `mkfs.ext4` (exact
+commands in the module comment).
+
 ### Custom packages
 
-`packages/` is a nixpkgs overlay (flake input `packages`, `flake = false`). Applied in `nixos-base` via `nixpkgs.overlays = [ (import inputs.packages) ]`.
+`packages/` is a nixpkgs overlay (flake input `packages`, `flake = false`). `nixos-base` sets
+`nixpkgs.overlays` to four overlays, in order: `(import inputs.packages)`, `claude-code-nix`,
+`codex-cli-nix`, `vesc-tool`. The last three come from flake inputs that track upstream faster than
+nixpkgs does.
 
 | Package | Path | Notes |
 |---|---|---|
 | `adi1090x-plymouth` | `packages/adi1090x-plymouth/` | Custom Plymouth theme |
-| `alsa-ucm-conf` | `packages/alsa-ucm-conf/` | ALSA UCM config overrides |
+| `alsa-ucm-conf` | `packages/alsa-ucm-conf/` | ALSA UCM 1.2.8 downgrade — **commented out** in `packages/default.nix` |
 | `ar-compositor` | `packages/ar-compositor/` | AR passthrough compositor for XReal One Pro (Python/GTK3/GStreamer) |
 | `breezy-gnome` | `packages/breezy/breezy-gnome.nix` | Breezy GNOME extension |
 | `xrlinuxdriver` | `packages/breezy/xrlinuxdriver.nix` | Patched Breezy XR driver binary |
-| `llama` | `packages/llama/` | llama.cpp (local LLM inference) |
+| `llama` | `packages/llama/` | llama.cpp — **not in the overlay**; standalone `shell.nix` only |
 | `obdium` | `packages/obdium/` | OBD2 diagnostics app; built against pinned nixpkgs-webkitgtk40 |
 | `xreal-one-ctl` | `packages/xreal-one-ctl/` | CLI for XReal One AR glasses (Rust; from 0xcaff/xr-tools) |
+| `fargo-dtc4250e-driver` | `packages/fargo-dtc4250e-driver/` | CUPS PPD + filter for the Fargo DTC4250e card printer (wired up in `base.nix`); `src` is a `requireFile` — see below |
 
 **Dual-nixpkgs strategy**: packages requiring `webkitgtk_4_0` (obdium, and breezy-gnome's build dependencies) accept a `pkgs-webkitgtk40` argument wired to the pinned nixpkgs. The overlay's `default.nix` passes it through so these packages build without polluting the main nixpkgs set.
+
+### fargo-dtc4250e-driver src
+
+HID gates the driver download behind a form and the tarball is not redistributable, so `src` is a
+`requireFile`. On a machine that has never built it, evaluation fails with instructions. Satisfy it
+once:
+
+```bash
+# download "SFW-02132 Rev B - DTC4250e Linux Printer Driver v1.0.0.4" from
+# https://www.hidglobal.com/drivers, unpack the outer archive, then:
+nix-store --add-fixed sha256 DTC4250e-1.0.0.4-x64.tar.gz
+```
+
+This replaced an absolute `/home/siigna/Downloads/...` path, which was the sole reason every
+`nixos-rebuild` target used to need `--impure`.
+
+### hardware-nixbuilder notes
+
+nixpkgs' `virtualisation/proxmox-image.nix` defines the root filesystem, `boot.growPartition` and
+virtio initrd modules — but only while `build-image` is running. A plain evaluation of
+`.#nixosConfigurations.nixbuilder` therefore used to fail with *"The 'fileSystems' option does not
+specify your root file system"*, which blocked `nixos-rebuild switch --flake .#nixbuilder
+--target-host root@nixbuilder` against the live VM.
+
+The virtio modules are the bigger trap: the default `boot.initrd.availableKernelModules` in
+`system/boot/kernel.nix` contains no virtio driver at all, so a system built outside the image path
+would produce an initrd that cannot see `/dev/vda` — an unbootable VM.
+
+`hardware.nix` declares the real hardware (`/dev/disk/by-label/nixos`, ext4, autoResize). Everything
+the image module also sets is `lib.mkDefault`, and `/boot` is deliberately **not** declared — the
+host uses BIOS GRUB on `/dev/vda`, there is no ESP, and mounting a nonexistent one would break boot.
 
 ### Option dependency tracking
 
@@ -176,3 +246,5 @@ make track-text-diff      # pseudo-nix diff of explicitly defined values
 1. Create `modules/<category>/<name> [N]/<name>.nix`
 2. Return `{ flake.modules.nixos.<name> = { pkgs, lib, ... }: { ... }; }`
 3. Add `<name>` to the imports list in `modules/hosts/nixdeck [N]/configuration.nix`
+4. `git add` it — flakes ignore untracked files in a dirty git tree, so a new module file is
+   invisible until staged and fails with `error: undefined variable '<name>'`
