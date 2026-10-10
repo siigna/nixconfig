@@ -89,90 +89,21 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `bootnext` | `services/bootnext [N]/bootnext.nix` — oneshot setting UEFI BootNext back to the current entry (SteamOS) |
 | `nix-build-scratch` | `system/nix-build-scratch [N]/nix-build-scratch.nix` — build sandbox scratch on an ext4 image inside the NTFS volume |
 | `boucheblaster` | `users/boucheblaster [N]/boucheblaster.nix` — secondary user (dialout, networkmanager, plugdev, uucp) |
+| `claude-code` | `programs/claude-code [N]/claude-code.nix` — Claude Code + `/etc/claude-code/managed-settings.json` (statusline, hooks, pinned plugins) |
 
-### jovian.nix notes
+### Per-module notes
 
-The `jovian-stubs` package is overridden via `nixpkgs.overlays` to replace `steamos-session-select` with a working implementation. The upstream stub calls `steamosctl switch-to-desktop-mode` which hangs because the `SessionManagement1` D-Bus interface is absent in Jovian's `steamos-manager`. The override kills `$gamescope_pid` directly (or stops `gamescope-session.target` as a fallback), which drops the `deck` user back to GDM.
+Gotchas and design notes live in a `CLAUDE.md` next to the module they describe, loaded on demand
+when a file in that directory is read. Read the one for the module before changing it:
 
-The stub is injected at the front of PATH inside the Steam bubblewrap via the FHS profile (`steam-run-1.0.0.85-fhsenv-profile`), so system-level PATH overrides have no effect — the overlay is the only way to intercept it.
-
-A `steam-launch-watchdog` user service starts with the gamescope session and terminates it after 90 seconds if `steam-launcher.service` never became active, returning the user to GDM.
-
-`jovian.decky-loader.user` is set to `"deck"` (matching SteamOS). The Jovian default `"decky"` is a system user with nologin shell, which breaks the XRGaming plugin's `su -l` calls. The `su` wrapper in `extraPackages` delegates to `runuser` because the real `su` requires a TTY that the decky-loader systemd service lacks.
-
-### breezy.nix notes
-
-Breezy Desktop (XR glasses driver) is installed system-wide via Nix. The custom `xrlinuxdriver` package in `packages/breezy/` carries five source patches (see `xr_driver_notes.md` for full details):
-
-1. **`ipc-mutex-robust.patch`** — treats EPERM from `pthread_mutex_destroy` as non-fatal (the GNOME extension holds an mmap on the shared memory mutex)
-2. **`config-inotify-directory.patch`** — watches the config *directory* for `MOVED_TO` instead of the file for `DELETE_SELF`, so `os.replace()` config writes are detected
-3. **`state-null-check.patch`** — prevents segfault in `write_state` when `fopen` returns NULL due to `fs.protected_regular=1`
-4. **`reenable-device-reconnect.patch`** — calls `exit(0)` on runtime re-enable so systemd restarts the driver with a fresh device pipeline (the device thread has race conditions that prevent reconnection otherwise)
-5. **`startup-license-race.patch`** — re-reads config after `plugins.start()` in `main()` to fix a startup race where `is_productivity_granted()` is cached as `false` before the license is fetched. Without this, `breezy_desktop.enabled` stays `false` on startup (even with valid trial/license), IMU file never updates, and the GNOME extension never activates.
-
-`breezy-gnome.nix` applies one patch of its own, `window-scrollable.patch`, via an explicit
-`patch -p1` (not `patches`) because the source tree contains symlinks that `patch`/`substituteInPlace`
-would follow.
-
-**Decky XRGaming plugin shim** (`breezyDeckyShim` activation script):
-- Patches `main.py`: replaces `is_driver_running()` (which needs deck's D-Bus session, absent at boot) with a unit-file existence check; fixes hardcoded UID 1000 → deck's actual UID (1001).
-- Patches `PyXRLinuxDriverIPC/xrdriveripc.py`: fixes the same UID 1000 hardcoding for `reset_driver()`.
-- Pre-populates plugin settings (`installed_from_plugin_version`, `manifest_checksum`) and creates a `breezy_vulkan_verify` shim.
-- Extracts vkBasalt libraries, reshade shaders, and vkBasalt config from the plugin's bundled tarball into deck's home directory.
-- Always patches from `.orig` backups so re-running activation is idempotent. If the plugin is updated through Decky, delete the `.orig` files so fresh backups are taken.
-
-**vkBasalt Vulkan layer** (for gamescope/Steam gaming mode):
-- Layer JSON installed system-wide in `/etc/vulkan/implicit_layer.d/` because Steam recreates `~/.local/share/vulkan/implicit_layer.d/` at login.
-- Libraries are FHS binaries in `~deck/.local/lib{,32}/` — only work inside Steam's FHS sandbox.
-- `ENABLE_VKBASALT=1` set in `jovian.steam.environment` (Jovian doesn't set the `SteamDeck` env var that SteamOS uses).
-
-**Cross-user IPC cleanup** (`xr-driver-cleanup@` system template service):
-- The xrDriver binary uses System V shared memory (`shmget`/`ftok` on `/tmp/shader_runtime_*`) and regular files in `/dev/shm/`. Under `fs.protected_regular=1`, files in sticky-bit directories (`/tmp`, `/dev/shm`) can't be opened with `O_CREAT` by a different user.
-- A root-level systemd template service cleans stale SysV segments (perms 666, nattch 0) and IPC files before each xr-driver start.
-- Invoked via `ExecStartPre` using a scoped NOPASSWD sudo rule.
-
-**Session lifecycle management** (`xr-driver` + `xr-driver-seat-watcher`):
-- `xr-driver` is bound to `graphical-session.target` (active for both GNOME and gamescope/deck) via `WantedBy` + `PartOf`, so it stops automatically on logout.
-- `xr-driver-seat-watcher` is a companion user service that monitors the logind session's `Active` D-Bus property. When the user switches away (`Active→false`), it stops xr-driver, releasing the USB device. When the user switches back (`Active→true`), it starts xr-driver fresh (triggering cleanup + device grab). No manual intervention needed for user switching in either direction.
-
-**`breezyGnomeSetup` activation script**: Creates `~/.local/bin/xr_driver_cli` as a symlink to `/run/current-system/sw/bin/xr_driver_cli` for the siigna user. The GNOME extension's keyboard toggle shortcut (`_toggle_xr_effect`) looks for the CLI at `$XDG_BIN_HOME/xr_driver_cli` then `/usr/bin/xr_driver_cli`; neither exists on NixOS without the symlink.
-
-**Extension debugging**: Logs go to `~/.local/state/breezy_gnome/logs/gjs/YYYY-MM-DD.log` (NOT the journal). Enable debug with `gsettings set com.xronlinux.BreezyDesktop debug true`. Key diagnostic: "Ready, enabling XR effect" means the effect activated; "device stream not being received" means `breezy_desktop_running` stayed false.
-
-**Root cause of GNOME side not working** (fixed by `startup-license-race.patch`): At startup, `main()` calls `update_config_from_file()` before `plugins.start()`. The `device_license` plugin makes a blocking network request, so when config is first parsed, `is_productivity_granted()` caches `false` → `bd_config->enabled = false` → IMU file never written with `enabled=true` → extension keepalive expires → `breezy_desktop_running` stays false → no XR effect. The fix re-reads config after `plugins.start()` so the feature check uses the fetched license.
-
-### xreal-one.nix notes
-
-`xreal-one-ctl` (from `packages/xreal-one-ctl/`) is a Rust CLI built from the [0xcaff/xr-tools](https://github.com/0xcaff/xr-tools) workspace. Primary use: `xreal_one_ctl enable-camera` turns on the XReal One Pro's passthrough eye camera, causing the device to reconnect and expose a UVC camera interface.
-
-`ar-compositor` (from `packages/ar-compositor/`) is a Python/GTK3/GStreamer app that composites the glasses camera feed with a Mutter ScreenCast desktop capture, with a live preview window and a Record button. Saves recordings to `~/Videos`.
-
-Both tools need USB access without sudo — the module adds udev rules for vendor ID `0x3318` (XReal) granting `plugdev` group access, and adds siigna to `plugdev`.
-
-### obdium.nix notes
-
-`obdium` (from `packages/obdium/`) is an OBD2 automotive diagnostics app. It requires `webkitgtk_4_0` (based on libsoup2 / Tauri v1 / wry <0.38), which was removed from nixpkgs-unstable around 2025-10-08. The package is built using `nixpkgs-webkitgtk40` (pinned to commit `10924657b0dc`), a flake input specifically added to preserve this dependency.
-
-The module adds siigna to the `dialout` group for access to ELM327 USB-serial adapters on `/dev/ttyUSB*`.
-
-### steam-library.nix notes
-
-Creates a `steam-library` group and a shared directory at `/var/lib/steam-library` (mode 2775, owned by root:steam-library). Both `siigna` and `deck` users are added to the group, allowing cross-user Steam library sharing between desktop and gaming sessions.
-
-### gdm-nopasswdlogin.nix notes
-
-The PAM rule must go through `security.pam.services.gdm-password.rules`, not `.text`. The generated
-stack is `lib.mkDefault`, so any plain `text` definition (including `mkBefore`, which changes order
-but not priority) discards it entirely — gdm-password then falls through to `/etc/pam.d/other`
-(pam_warn + pam_deny) and every GDM login fails, including deck's autologin.
-
-### nix-build-scratch.nix notes
-
-`/var/nix-build` is an ext4 image on `/mnt/win` (nvme0n1p3), because root is full of the Steam library
-while large builds (Valve kernel peaks ~43G) need scratch. An image rather than ntfs3 directly: build
-sandboxes need real ownership, hardlinks and device nodes. Scratch only, never the store — mounted
-`nofail` so a mount failure breaks a build, not boot. Recreate with `fallocate` + `mkfs.ext4` (exact
-commands in the module comment).
+- `services/jovian [N]/` — `steamos-session-select` overlay, launch watchdog, `decky` user / `su` wrapper
+- `programs/breezy [N]/` — xrlinuxdriver patches, Decky XRGaming shim, vkBasalt, IPC cleanup, session lifecycle (deeper detail in `xr_driver_notes.md`)
+- `programs/xreal-one [N]/`, `programs/obdium [N]/`, `services/steam-library [N]/`
+- `services/gdm-nopasswdlogin [N]/` — PAM rule must use `.rules`, not `.text`, or every GDM login fails
+- `system/nix-build-scratch [N]/` — why `/var/nix-build` is an ext4 image on the NTFS volume
+- `hosts/nixbuilder [N]/` — why `hardware.nix` duplicates the Proxmox image module, and must not declare `/boot`
+- `programs/claude-code [N]/` — managed settings, plugin marketplace, Dippy wrapper
+- `packages/fargo-dtc4250e-driver/` — the `requireFile` src and how to satisfy it
 
 ### Custom packages
 
@@ -191,40 +122,13 @@ nixpkgs does.
 | `llama` | `packages/llama/` | llama.cpp — **not in the overlay**; standalone `shell.nix` only |
 | `obdium` | `packages/obdium/` | OBD2 diagnostics app; built against pinned nixpkgs-webkitgtk40 |
 | `xreal-one-ctl` | `packages/xreal-one-ctl/` | CLI for XReal One AR glasses (Rust; from 0xcaff/xr-tools) |
-| `fargo-dtc4250e-driver` | `packages/fargo-dtc4250e-driver/` | CUPS PPD + filter for the Fargo DTC4250e card printer (wired up in `base.nix`); `src` is a `requireFile` — see below |
+| `fargo-dtc4250e-driver` | `packages/fargo-dtc4250e-driver/` | CUPS PPD + filter for the Fargo DTC4250e card printer (wired up in `base.nix`); `src` is a `requireFile` |
+| `goccc` | `packages/goccc/` | Claude Code cost statusline; patched to price OpenRouter model IDs |
+| `dippy` | `packages/dippy/` | Claude Code hook auto-approving read-only shell commands |
+| `agnix` | `packages/agnix/` | Linter for CLAUDE.md, skills, hooks, plugin and MCP config |
+| `claude-plugins` | `packages/claude-plugins/` | Local plugin marketplace built from pinned upstream repos |
 
 **Dual-nixpkgs strategy**: packages requiring `webkitgtk_4_0` (obdium, and breezy-gnome's build dependencies) accept a `pkgs-webkitgtk40` argument wired to the pinned nixpkgs. The overlay's `default.nix` passes it through so these packages build without polluting the main nixpkgs set.
-
-### fargo-dtc4250e-driver src
-
-HID gates the driver download behind a form and the tarball is not redistributable, so `src` is a
-`requireFile`. On a machine that has never built it, evaluation fails with instructions. Satisfy it
-once:
-
-```bash
-# download "SFW-02132 Rev B - DTC4250e Linux Printer Driver v1.0.0.4" from
-# https://www.hidglobal.com/drivers, unpack the outer archive, then:
-nix-store --add-fixed sha256 DTC4250e-1.0.0.4-x64.tar.gz
-```
-
-This replaced an absolute `/home/siigna/Downloads/...` path, which was the sole reason every
-`nixos-rebuild` target used to need `--impure`.
-
-### hardware-nixbuilder notes
-
-nixpkgs' `virtualisation/proxmox-image.nix` defines the root filesystem, `boot.growPartition` and
-virtio initrd modules — but only while `build-image` is running. A plain evaluation of
-`.#nixosConfigurations.nixbuilder` therefore used to fail with *"The 'fileSystems' option does not
-specify your root file system"*, which blocked `nixos-rebuild switch --flake .#nixbuilder
---target-host root@nixbuilder` against the live VM.
-
-The virtio modules are the bigger trap: the default `boot.initrd.availableKernelModules` in
-`system/boot/kernel.nix` contains no virtio driver at all, so a system built outside the image path
-would produce an initrd that cannot see `/dev/vda` — an unbootable VM.
-
-`hardware.nix` declares the real hardware (`/dev/disk/by-label/nixos`, ext4, autoResize). Everything
-the image module also sets is `lib.mkDefault`, and `/boot` is deliberately **not** declared — the
-host uses BIOS GRUB on `/dev/vda`, there is no ESP, and mounting a nonexistent one would break boot.
 
 ### Option dependency tracking
 
