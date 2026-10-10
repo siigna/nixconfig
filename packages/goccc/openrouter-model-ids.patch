@@ -1,0 +1,32 @@
+diff --git a/pricing.go b/pricing.go
+index 9e0af64..c26924f 100644
+--- a/pricing.go
++++ b/pricing.go
+@@ -296,8 +296,17 @@ func (m ModelPricing) priceAt(ts time.Time) PriceFields {
+ 	return best
+ }
+ 
++// normalizeModelID maps gateway-style IDs such as OpenRouter's
++// "anthropic/claude-opus-5.5" onto the native "claude-opus-5-5" form.
++func normalizeModelID(model string) string {
++	if i := strings.LastIndexByte(model, '/'); i >= 0 {
++		model = model[i+1:]
++	}
++	return strings.ReplaceAll(model, ".", "-")
++}
++
+ func resolvePricing(model string, ts time.Time) ModelPricing {
+-	baseModel, isFast := strings.CutSuffix(model, ":fast")
++	baseModel, isFast := strings.CutSuffix(normalizeModelID(model), ":fast")
+ 	resolved, fallback := resolveBaseModel(baseModel)
+ 	chosen := fallback
+ 	if isFast && len(fastPricingTable) > 0 {
+@@ -437,7 +446,7 @@ func calcCost(model string, usage Usage, ts time.Time) float64 {
+ const fastMarker = " ⚡"
+ 
+ func shortModel(model string) string {
+-	base, isFast := strings.CutSuffix(model, ":fast")
++	base, isFast := strings.CutSuffix(normalizeModelID(model), ":fast")
+ 	// Claude Code's statusline reports 1M-context aliases as "claude-opus-5[1m]"; drop it.
+ 	base, _, _ = strings.Cut(base, "[")
+ 	m := strings.TrimPrefix(strings.ToLower(base), "claude-")

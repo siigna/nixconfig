@@ -116,7 +116,6 @@
         netflix
         bambu-studio
         bottles-unwrapped
-        claude-code
         codex
         rustscan
         nmap

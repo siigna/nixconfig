@@ -22,6 +22,7 @@
       xreal-one
       obdium
       vesc-tool
+      claude-code
     ];
     nixdeck.useGrub = false;
   };
