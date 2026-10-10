@@ -14,13 +14,13 @@ BUILDERS_ARG =
 endif
 
 build:
-	nixos-rebuild build $(FLAKE_ARG) $(BUILDERS_ARG) --impure
+	nixos-rebuild build $(FLAKE_ARG) $(BUILDERS_ARG)
 
 switch:
-	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG) --impure
+	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG)
 
 boot:
-	sudo nixos-rebuild boot $(FLAKE_ARG) $(BUILDERS_ARG) --impure
+	sudo nixos-rebuild boot $(FLAKE_ARG) $(BUILDERS_ARG)
 
 update:
 	nix flake update

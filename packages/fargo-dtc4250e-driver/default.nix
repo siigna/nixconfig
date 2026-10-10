@@ -9,12 +9,32 @@
   cups,
   patchelf,
   lib,
+  requireFile,
 }:
 stdenv.mkDerivation {
   pname = "fargo-dtc4250e-driver";
   version = "1.0.0.4";
 
-  src = /home/siigna/Downloads/sfw-02132_revb_dtc4250e_linux_printer_driver_v1.0.0.4/DTC4250e-1.0.0.4-x64.tar.gz;
+  # requireFile rather than a path or fetchurl: HID gates the download behind a
+  # form, and an absolute path out of ~/Downloads forces `nixos-rebuild --impure`
+  # for the whole flake. Add the tarball to the store once per machine with the
+  # command printed in `message` below.
+  src = requireFile {
+    name = "DTC4250e-1.0.0.4-x64.tar.gz";
+    hash = "sha256-y2ZsEDzVyuUqBvLBEQ723j/EsiYdsunp7OYb0HY6as0=";
+    url = "https://www.hidglobal.com/drivers";
+    message = ''
+      The HID Fargo DTC4250e Linux driver is not redistributable and must be
+      fetched by hand from HID Global:
+
+        https://www.hidglobal.com/drivers
+
+      Download "SFW-02132 Rev B - DTC4250e Linux Printer Driver v1.0.0.4",
+      unpack the outer archive, then add the x64 tarball to the store:
+
+        nix-store --add-fixed sha256 DTC4250e-1.0.0.4-x64.tar.gz
+    '';
+  };
 
   nativeBuildInputs = [ patchelf ];
   buildInputs = [ cups ];
