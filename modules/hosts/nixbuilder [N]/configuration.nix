@@ -2,6 +2,7 @@
 {
   flake.modules.nixos.nixbuilder = {
     imports = with inputs.self.modules.nixos; [
+      hardware-nixbuilder
       builder-service
       tailscale
     ];
