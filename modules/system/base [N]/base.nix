@@ -18,7 +18,13 @@
           (import inputs.packages)
           inputs.claude-code-nix.overlays.default
           inputs.codex-cli-nix.overlays.default
-          inputs.vesc-tool.overlays.default
+          # Upstream overlay.nix reads the deprecated `prev.system` alias (eval warning);
+          # same overlay, keyed on stdenv.hostPlatform.system instead.
+          (final: _: import "${inputs.vesc-tool}/pkgs" {
+            src = inputs.vesc-tool;
+            bldc-fw = inputs.vesc-tool.inputs.bldc-fw.packages.${final.stdenv.hostPlatform.system}.bldc-fw;
+            pkgs = final;
+          })
           # obdium (Tauri v1) requires webkitgtk-4.0 + libsoup-2.4, both removed/insecure
           # in current nixpkgs. Build it from a pinned nixpkgs that still has them.
           (final: _: {
