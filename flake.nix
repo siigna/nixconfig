@@ -14,7 +14,7 @@
     # Steam Deck / Jovian-NixOS — pinned to same commit as original config
     jovian-nixos = {
       flake = false;
-      url = "github:Jovian-Experiments/Jovian-NixOS/dde7657";
+      url = "github:Jovian-Experiments/Jovian-NixOS/0833891";
     };
 
     # Custom overlay packages (adi1090x-plymouth, etc.)
