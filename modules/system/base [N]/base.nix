@@ -97,7 +97,8 @@
             }
           ];
           # Evidence.dev dev server
-          allowedTCPPorts = [ 3000 ];
+          # ESCargot Hub
+          allowedTCPPorts = [ 3000 4001 ];
         };
 
         time.timeZone = "America/Los_Angeles";
