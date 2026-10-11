@@ -8,6 +8,7 @@
       fonts
       gdm-nopasswdlogin
       jovian
+      jovian-steamdeck
       system-packages
       tailscale
       nixbuild
@@ -25,5 +26,7 @@
       claude-code
     ];
     nixdeck.useGrub = false;
+    networking.hostName = "nixdeck";
+    system.stateVersion = "22.11";
   };
 }

@@ -6,7 +6,7 @@
         PubkeyAcceptedKeyTypes ssh-ed25519
         IdentityFile /root/.ssh/my-nixbuild-key
 
-      Host nixbuilder
+      Host nixbuilder steammachine
         PubkeyAcceptedKeyTypes ssh-ed25519
         IdentityFile /root/.ssh/nixbuilder-key
         StrictHostKeyChecking accept-new
@@ -32,6 +32,19 @@
           system = "x86_64-linux";
           sshUser = "nix-ssh";
           maxJobs = 4;
+          supportedFeatures = [
+            "nix-command"
+            "big-parallel"
+          ];
+          speedFactor = 4;
+        }
+        # Steam Machine (over Tailscale). Same key as nixbuilder. Its daemon runs at idle
+        # priority so builds yield to games; unreachable while asleep/off, nix skips it.
+        {
+          hostName = "steammachine";
+          system = "x86_64-linux";
+          sshUser = "nix-ssh";
+          maxJobs = 2;
           supportedFeatures = [
             "nix-command"
             "big-parallel"

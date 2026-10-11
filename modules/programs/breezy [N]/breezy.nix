@@ -101,6 +101,26 @@
         };
       };
 
+      # The XRGaming plugin calls `su -l -c '...' deck` to manage xr-driver.
+      # On NixOS, /run/wrappers/bin/su requires a TTY, but the decky-loader
+      # systemd service has none. `runuser` works from root without a TTY,
+      # so our `su` wrapper delegates to it.
+      jovian.decky-loader.extraPackages = with pkgs; [
+        (writeShellScriptBin "su" ''exec ${util-linux}/bin/runuser "$@"'')
+        bash
+      ];
+
+      # The XRGaming plugin deletes LD_LIBRARY_PATH from the subprocess env
+      # before running install steps, assuming it was inherited from Steam.
+      # The Decky service doesn't have it, so the deletion crashes with KeyError.
+      # Setting it empty satisfies the del without affecting anything.
+      systemd.services.decky-loader.environment.LD_LIBRARY_PATH = "";
+
+      # Enable the vkBasalt Vulkan layer inside gamescope so the Breezy
+      # XR shader (Sombrero) is active during gaming. Jovian doesn't set
+      # the SteamDeck env var that SteamOS uses, so we use ENABLE_VKBASALT.
+      jovian.steam.environment.ENABLE_VKBASALT = "1";
+
       # Install XR device udev rules
       services.udev.packages = [ pkgs.breezy-desktop ];
 

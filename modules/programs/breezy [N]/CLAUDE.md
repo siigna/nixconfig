@@ -22,7 +22,7 @@ would follow.
 **vkBasalt Vulkan layer** (for gamescope/Steam gaming mode):
 - Layer JSON installed system-wide in `/etc/vulkan/implicit_layer.d/` because Steam recreates `~/.local/share/vulkan/implicit_layer.d/` at login.
 - Libraries are FHS binaries in `~deck/.local/lib{,32}/` — only work inside Steam's FHS sandbox.
-- `ENABLE_VKBASALT=1` set in `jovian.steam.environment` (Jovian doesn't set the `SteamDeck` env var that SteamOS uses).
+- `ENABLE_VKBASALT=1` set in `jovian.steam.environment` (Jovian doesn't set the `SteamDeck` env var that SteamOS uses), in `breezy.nix`, along with the XRGaming `su` → `runuser` shim and empty `decky-loader` `LD_LIBRARY_PATH`.
 
 **Cross-user IPC cleanup** (`xr-driver-cleanup@` system template service):
 - The xrDriver binary uses System V shared memory (`shmget`/`ftok` on `/tmp/shader_runtime_*`) and regular files in `/dev/shm/`. Under `fs.protected_regular=1`, files in sticky-bit directories (`/tmp`, `/dev/shm`) can't be opened with `O_CREAT` by a different user.

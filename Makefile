@@ -1,10 +1,19 @@
 FLAKE ?= 1
 NOBUILDERS ?= 0
+HOST ?= nixdeck
+# Deploy over SSH instead of locally, e.g. make switch HOST=steammachine TARGET=root@steammachine
+TARGET ?=
 
 ifeq ($(FLAKE),1)
-FLAKE_ARG = --flake .#nixdeck
+FLAKE_ARG = --flake .\#$(HOST)
 else
 FLAKE_ARG =
+endif
+
+ifneq ($(TARGET),)
+TARGET_ARG = --target-host $(TARGET)
+else
+TARGET_ARG =
 endif
 
 ifeq ($(NOBUILDERS),1)
@@ -17,10 +26,10 @@ build:
 	nixos-rebuild build $(FLAKE_ARG) $(BUILDERS_ARG)
 
 switch:
-	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG)
+	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG) $(TARGET_ARG)
 
 boot:
-	sudo nixos-rebuild boot $(FLAKE_ARG) $(BUILDERS_ARG)
+	sudo nixos-rebuild boot $(FLAKE_ARG) $(BUILDERS_ARG) $(TARGET_ARG)
 
 update:
 	nix flake update

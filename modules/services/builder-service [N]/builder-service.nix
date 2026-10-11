@@ -1,5 +1,7 @@
 { ... }:
 {
+  # Accept remote builds over SSH as nix-ssh, and root SSH for nixos-rebuild --target-host.
+  # Host-agnostic: imported by nixbuilder (Proxmox VM) and steammachine.
   flake.modules.nixos.builder-service =
     {
       pkgs,
@@ -18,24 +20,6 @@
       };
 
       config = {
-        networking.hostName = "nixbuilder";
-        networking.useDHCP = lib.mkDefault true;
-        # Force ethernet interfaces up at boot — without this, networkd leaves
-        # the link down until manually upped (observed on Proxmox virtio NICs).
-        systemd.network.networks."10-ethernet" = {
-          matchConfig.Name = "en* eth*";
-          linkConfig.ActivationPolicy = "always-up";
-          networkConfig.DHCP = "yes";
-        };
-
-        boot.loader.grub.enable = true;
-        # Serial console for Proxmox "Serial Console" tab fallback.
-        # tty1 listed last so it remains the GRUB/boot default.
-        boot.kernelParams = lib.mkAfter [
-          "console=ttyS0,115200n8"
-          "console=tty1"
-        ];
-
         services.openssh = {
           enable = true;
           settings = {
@@ -58,10 +42,6 @@
         users.users.root.openssh.authorizedKeys.keys = config.nixbuilder.authorizedKeys;
 
         nix.settings = {
-          experimental-features = [
-            "nix-command"
-            "flakes"
-          ];
           trusted-users = [
             "root"
             "nix-ssh"
@@ -70,17 +50,6 @@
           # requiring nixdeck to upload every closure dependency.
           builders-use-substitutes = true;
         };
-
-        nix.gc = {
-          automatic = true;
-          dates = "04:30";
-          options = "-d";
-          randomizedDelaySec = "15min";
-        };
-
-        security.sudo.wheelNeedsPassword = false;
-
-        system.stateVersion = "24.11";
       };
     };
 }

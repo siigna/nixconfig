@@ -1,5 +1,11 @@
 # jovian.nix notes
 
+Split in two modules. `jovian` (shared) holds Steam, Decky, the `deck` user, the stub overlay and the
+watchdog. `jovian-steamdeck` (nixdeck only) holds Deck hardware (`jovian.devices.steamdeck`, dock/BIOS
+updaters, `jupiter-fan-control` mask) and the GDM flow (`deckGdmSession` pin, `nopasswdlogin`).
+The XRGaming plugin workarounds (`su` shim, empty `LD_LIBRARY_PATH`, `ENABLE_VKBASALT`) live in
+`breezy.nix`.
+
 The `jovian-stubs` package is overridden via `nixpkgs.overlays` to replace `steamos-session-select` with a working implementation. The upstream stub calls `steamosctl switch-to-desktop-mode` which hangs because the `SessionManagement1` D-Bus interface is absent in Jovian's `steamos-manager`. The override kills `$gamescope_pid` directly (or stops `gamescope-session.target` as a fallback), which drops the `deck` user back to GDM.
 
 The stub is injected at the front of PATH inside the Steam bubblewrap via the FHS profile (`steam-run-1.0.0.85-fhsenv-profile`), so system-level PATH overrides have no effect — the overlay is the only way to intercept it.

@@ -36,12 +36,6 @@
         })
       ];
 
-      environment.systemPackages = with pkgs; [
-        jupiter-dock-updater-bin
-        steamdeck-firmware
-      ];
-
-      jovian.devices.steamdeck.enable = true;
       jovian.steam.enable = true;
       jovian.decky-loader.enable = true;
 
@@ -52,26 +46,8 @@
       # xr-driver as the actual Steam user.
       jovian.decky-loader.user = "deck";
 
-      # The XRGaming plugin calls `su -l -c '...' deck` to manage xr-driver.
-      # On NixOS, /run/wrappers/bin/su requires a TTY, but the decky-loader
-      # systemd service has none. `runuser` works from root without a TTY,
-      # so our `su` wrapper delegates to it.
-      jovian.decky-loader.extraPackages = with pkgs; [
-        (writeShellScriptBin "su" ''exec ${util-linux}/bin/runuser "$@"'')
-        bash
-      ];
-
-      # Enable the vkBasalt Vulkan layer inside gamescope so the Breezy
-      # XR shader (Sombrero) is active during gaming. Jovian doesn't set
-      # the SteamDeck env var that SteamOS uses, so we use ENABLE_VKBASALT.
-      jovian.steam.environment.ENABLE_VKBASALT = "1";
-
       nixpkgs.config.allowUnfree = true;
       services.pulseaudio.enable = false;
-
-      # steamdeck_hwmon kernel module is not available in the current kernel,
-      # so jupiter-fan-control always fails. Mask it to avoid switch errors.
-      systemd.services.jupiter-fan-control.enable = false;
 
       # Decky Loader requires CEF remote debugging to inject into the Steam UI.
       # Steam only picks this up at launch, so the file must exist beforehand.
@@ -88,7 +64,7 @@
 
       # If steam-launcher hasn't come up within 90 seconds of gamescope
       # starting, assume something went wrong and kill the session so the
-      # user lands back at GDM and can retry cleanly.
+      # user lands back at the display manager and can retry cleanly.
       systemd.user.services.steam-launch-watchdog = {
         description = "Terminate gamescope session if Steam fails to start";
         after = [ "gamescope-session.service" ];
@@ -106,31 +82,13 @@
         };
       };
 
-      # Pin deck's GDM session to gamescope-wayland so it doesn't fall back to
-      # GNOME when no session preference has been stored by AccountsService.
-      system.activationScripts.deckGdmSession = ''
-                mkdir -p /var/lib/AccountsService/users
-                cat > /var/lib/AccountsService/users/deck << 'EOF'
-        [User]
-        Session=gamescope-wayland
-        SystemAccount=false
-        EOF
-      '';
-
       users.users.deck = {
         hashedPassword = "REDACTED";
         isNormalUser = true;
         shell = pkgs.bash;
         extraGroups = [
           "networkmanager"
-          "nopasswdlogin"
         ];
       };
-
-      # The XRGaming plugin deletes LD_LIBRARY_PATH from the subprocess env
-      # before running install steps, assuming it was inherited from Steam.
-      # The Decky service doesn't have it, so the deletion crashes with KeyError.
-      # Setting it empty satisfies the del without affecting anything.
-      systemd.services.decky-loader.environment.LD_LIBRARY_PATH = "";
     };
 }
