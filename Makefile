@@ -37,11 +37,6 @@ update:
 update-claude:
 	nix flake update claude-code-nix
 
-# Build a qcow2 image for the nixbuilder Proxmox VM.
-# Import into Proxmox with qm importdisk after creation.
-image-nixbuilder:
-	nixos-rebuild build-image --flake .#nixbuilder --image-variant proxmox
-
 # Option dependency tracking (requires patched nix — provided via devShell)
 # Run track-build first to populate ./result, then use the diff/show targets.
 
@@ -68,6 +63,6 @@ track-diff-explicit:
 track-text-diff:
 	nix develop .#tracking --command nixos-config text-diff --explicit /run/current-system ./result
 
-.PHONY: build switch boot update update-claude image-nixbuilder \
+.PHONY: build switch boot update update-claude \
         track-build track-show track-show-result \
         track-diff track-diff-explicit track-text-diff

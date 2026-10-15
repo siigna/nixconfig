@@ -6,7 +6,7 @@
         PubkeyAcceptedKeyTypes ssh-ed25519
         IdentityFile /root/.ssh/my-nixbuild-key
 
-      Host nixbuilder steammachine
+      Host steammachine
         PubkeyAcceptedKeyTypes ssh-ed25519
         IdentityFile /root/.ssh/nixbuilder-key
         StrictHostKeyChecking accept-new
@@ -22,24 +22,11 @@
     nix = {
       distributedBuilds = true;
       buildMachines = [
-        # Local Proxmox VM — preferred (speedFactor = 4) when available.
-        # Falls back to nixbuild.net for overflow or when unreachable.
-        # SSH key: sudo ssh-keygen -t ed25519 -f /root/.ssh/nixbuilder-key -N ""
-        # Then add the pubkey to nixbuilder.authorizedKeys in:
-        #   modules/hosts/nixbuilder [N]/configuration.nix
-        {
-          hostName = "nixbuilder";
-          system = "x86_64-linux";
-          sshUser = "nix-ssh";
-          maxJobs = 4;
-          supportedFeatures = [
-            "nix-command"
-            "big-parallel"
-          ];
-          speedFactor = 4;
-        }
-        # Steam Machine (over Tailscale). Same key as nixbuilder. Its daemon runs at idle
-        # priority so builds yield to games; unreachable while asleep/off, nix skips it.
+        # Steam Machine over Tailscale — preferred (speedFactor = 4) when reachable; its daemon
+        # runs at idle priority so builds yield to games. Falls back to nixbuild.net for
+        # overflow or while it is asleep/off.
+        # SSH key: /root/.ssh/nixbuilder-key (name predates the Steam Machine); its pubkey is in
+        # builder.authorizedKeys in modules/hosts/steammachine [N]/configuration.nix.
         {
           hostName = "steammachine";
           system = "x86_64-linux";

@@ -13,16 +13,14 @@ make update   # nix flake update (refresh flake.lock)
 make build FLAKE=0      # same targets but using /etc/nixos (legacy fallback)
 make build NOBUILDERS=1 # build without distributed builders (bypasses nixbuild.net)
 make update-claude      # update only the claude-code-nix flake input
-make image-nixbuilder   # build a qcow2 image for the nixbuilder Proxmox VM
 
 make build HOST=steammachine                            # build another host
 make switch HOST=steammachine TARGET=root@steammachine  # deploy over SSH
 ```
 
 `build`/`switch`/`boot` target `.#$(HOST)` (default `nixdeck`); `TARGET` adds `--target-host`.
-`nixbuilder` is normally built via `make image-nixbuilder`. Evaluation is pure — if a
-build ever demands `--impure`, something has grown an absolute path or `builtins.getEnv`; fix that
-rather than adding the flag back.
+Evaluation is pure — if a build ever demands `--impure`, something has grown an absolute path or
+`builtins.getEnv`; fix that rather than adding the flag back.
 
 To roll back without rebooting:
 ```bash
@@ -33,7 +31,7 @@ The flake directory can be anywhere — nothing hardcodes its location. All path
 
 ## Architecture
 
-This is a NixOS configuration for three hosts — `nixdeck` (Steam Deck), `steammachine` (Steam Machine on the TV, also a remote builder) and `nixbuilder` (Proxmox VM used as a remote build machine) — using the **Dendritic Pattern** with **flake-parts** + **import-tree**.
+This is a NixOS configuration for two hosts — `nixdeck` (Steam Deck) and `steammachine` (Steam Machine on the TV, also nixdeck's remote builder) — using the **Dendritic Pattern** with **flake-parts** + **import-tree**.
 
 ### How it works
 
@@ -54,18 +52,12 @@ The `flake.modules.nixos` option is enabled by `inputs.flake-parts.flakeModules.
 - `configuration.nix` — registers `flake.modules.nixos.nixdeck` importing all other named modules
 - `hardware.nix` — registers `flake.modules.nixos.hardware-nixdeck` (filesystems, kernel modules, AMD microcode)
 
-**`modules/hosts/nixbuilder [N]/`** (Proxmox build VM):
-- `flake-parts.nix` — calls `mkNixos "x86_64-linux" "nixbuilder"` (buildable as a qcow2 image via `make image-nixbuilder`)
-- `configuration.nix` — imports `hardware-nixbuilder` + `builder-service` + `tailscale`; sets hostname, GRUB on `/dev/vda`, serial console, gc, `nixbuilder.authorizedKeys` and a local `admin` user for bootstrap access
-- `hardware.nix` — registers `flake.modules.nixos.hardware-nixbuilder` (root fs, growPartition, virtio initrd modules)
-
 **`modules/hosts/steammachine [N]/`** (Steam Machine):
 - `flake-parts.nix` — `mkNixos "x86_64-linux" "steammachine"`
 - `configuration.nix` — imports `nixos-common`, `jovian` (autostart via SDDM), `builder-service`, `tailscale`, `siigna`, `hosts-file`
 - `hardware.nix` — registers `flake.modules.nixos.hardware-steammachine` (label-based root/ESP, zram)
 
-Each host sets its own `networking.hostName` and `system.stateVersion`. `nixbuilder` imports neither
-`nixos-base` nor `nixos-common`.
+Each host sets its own `networking.hostName` and `system.stateVersion`.
 
 ### Module naming convention
 
@@ -83,13 +75,13 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `jovian` | `services/jovian [N]/jovian.nix` — Jovian modules, Steam, Decky, `deck` user (shared) |
 | `jovian-steamdeck` | `services/jovian [N]/jovian-steamdeck.nix` — Deck hardware + GDM session flow (nixdeck) |
 | `tailscale` | `services/tailscale [N]/tailscale.nix` — service + firewall rules (auth via `tailscale login`) |
-| `nixbuild` | `services/nixbuild [N]/nixbuild.nix` — distributed builds: nixbuilder, steammachine, eu.nixbuild.net |
+| `nixbuild` | `services/nixbuild [N]/nixbuild.nix` — distributed builds: steammachine, then eu.nixbuild.net |
 | `siigna` | `users/siigna [N]/siigna.nix` — primary user, wheel + dev groups |
 | `breezy` | `programs/breezy [N]/breezy.nix` — Breezy Desktop XR driver + Decky plugin shim |
 | `xreal-one` | `programs/xreal-one [N]/xreal-one.nix` — XReal One AR glasses: xreal-one-ctl + ar-compositor, udev rules, plugdev group |
 | `obdium` | `programs/obdium [N]/obdium.nix` — OBD2 diagnostics app; adds siigna to `dialout` for ELM327 USB-serial adapters |
 | `steam-library` | `services/steam-library [N]/steam-library.nix` — shared Steam library at `/var/lib/steam-library` (siigna + deck users) |
-| `builder-service` | `services/builder-service [N]/builder-service.nix` — nix-ssh user + SSH daemon config for accepting remote builds (host-agnostic) |
+| `builder-service` | `services/builder-service [N]/builder-service.nix` — nix-ssh user + SSH daemon + `builder.authorizedKeys` for accepting remote builds (steammachine) |
 | `intellij` | `programs/intellij [N]/intellij.nix` — IntelliJ IDEA |
 | `radio` | `programs/radio [N]/radio.nix` — SDR / radio tools |
 | `vesc-tool` | `programs/vesc-tool [N]/vesc-tool.nix` — VESC motor-controller IDE; adds siigna to `dialout` for `/dev/ttyACM*` |
@@ -111,8 +103,7 @@ when a file in that directory is read. Read the one for the module before changi
 - `programs/xreal-one [N]/`, `programs/obdium [N]/`, `services/steam-library [N]/`
 - `services/gdm-nopasswdlogin [N]/` — PAM rule must use `.rules`, not `.text`, or every GDM login fails
 - `system/nix-build-scratch [N]/` — why `/var/nix-build` is an ext4 image on the NTFS volume
-- `hosts/nixbuilder [N]/` — why `hardware.nix` duplicates the Proxmox image module, and must not declare `/boot`
-- `hosts/steammachine [N]/` — no Jovian device module yet (PR #584), autostart session flow, install steps
+- `hosts/steammachine [N]/` — no Jovian device module yet (PR #584), autostart session flow, deploy, PXE reinstall recipe
 - `programs/claude-code [N]/` — managed settings, plugin marketplace, Dippy wrapper
 - `packages/fargo-dtc4250e-driver/` — the `requireFile` src and how to satisfy it
 

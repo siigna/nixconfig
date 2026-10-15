@@ -1,7 +1,7 @@
 { ... }:
 {
   # Accept remote builds over SSH as nix-ssh, and root SSH for nixos-rebuild --target-host.
-  # Host-agnostic: imported by nixbuilder (Proxmox VM) and steammachine.
+  # Imported by steammachine; nothing in it is host-specific.
   flake.modules.nixos.builder-service =
     {
       pkgs,
@@ -10,7 +10,7 @@
       ...
     }:
     {
-      options.nixbuilder.authorizedKeys = lib.mkOption {
+      options.builder.authorizedKeys = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [ ];
         description = ''
@@ -34,12 +34,12 @@
           isSystemUser = true;
           group = "nix-ssh";
           shell = pkgs.bash;
-          openssh.authorizedKeys.keys = config.nixbuilder.authorizedKeys;
+          openssh.authorizedKeys.keys = config.builder.authorizedKeys;
         };
         users.groups.nix-ssh = { };
 
         # Root access for nixos-rebuild --target-host and initial setup.
-        users.users.root.openssh.authorizedKeys.keys = config.nixbuilder.authorizedKeys;
+        users.users.root.openssh.authorizedKeys.keys = config.builder.authorizedKeys;
 
         nix.settings = {
           trusted-users = [
