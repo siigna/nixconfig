@@ -1,0 +1,71 @@
+Vendored from duckysocks22/Jovian-NixOS branch hdmi_cec, commit 10befd36ce3337db836714ff9172eb2b85141294,
+pkgs/linux-jovian/cec-notifier-wildcard-fallback-pairing.patch. Applied by configuration.nix.
+
+From: Socks <code@olympus.moe>
+Subject: [PATCH] cec: notifier: Make pairing order agnostic.
+
+The cec-notifier core allows the 'amdgpu' driver to pair with the 'ChromeOS EC' by matching the two registrations against each other.
+Both sides call with the GPU device and an optional connector name. The first registration creates an entry in the global list, the second one finds it and connects the two.
+
+The 'amdgpu' driver registers its connector entries without a name. The EC driver on the Steam Machine looks its HDMI connector up as "Port C". 
+If the EC driver registers first, amdgpu's nameless registration finds it and the two connect, however if the amdgpu registers first,
+which tends to happen when both drivers are loaded as modules instead of part of the kernel image, the EC's named lookup won't match a nameless entry. 
+It ends up allocating a second entry that never gets paired, causing the CEC functionality to silently fail. 
+By loading the modules directly into the kernel image, SteamOS removes the variance in the registration order.
+
+This patch modifies the lookup to be two-pass: When a named lookup fails to find an entry with the matching name. 
+It allows it to connect to a nameless entry on the same device (fremont's GPU in this case), provided no other CEC adapter has claimed it yet. 
+Exact matching via names it prioritized over the fallback, and the check is redone under the entry's own lock so two adapters that are 
+attempting to connect at the same time can never attach to the same entry simultaniously. 
+
+diff --git a/drivers/media/cec/core/cec-notifier.c b/drivers/media/cec/core/cec-notifier.c
+--- a/drivers/media/cec/core/cec-notifier.c
++++ b/drivers/media/cec/core/cec-notifier.c
+@@ -51,16 +51,39 @@
+ static struct cec_notifier *
+ cec_notifier_get_conn(struct device *hdmi_dev, const char *port_name)
+ {
+-	struct cec_notifier *n;
++	struct cec_notifier *n, *wildcard = NULL;
+ 
+ 	mutex_lock(&cec_notifiers_lock);
+ 	list_for_each_entry(n, &cec_notifiers, head) {
+-		if (n->hdmi_dev == hdmi_dev &&
+-		    (!port_name ||
+-		     (n->port_name && !strcmp(n->port_name, port_name)))) {
+-			kref_get(&n->kref);
+-			mutex_unlock(&cec_notifiers_lock);
+-			return n;
+-		}
++		if (n->hdmi_dev != hdmi_dev)
++			continue;
++
++		if (!port_name ||
++		    (n->port_name && !strcmp(n->port_name, port_name))) {
++			kref_get(&n->kref);
++			goto unlock;
++		}
++
++               /* Fallback if no exact match exists */
++		if (!n->port_name && !n->cec_adap && !wildcard)
++			wildcard = n;
+ 	}
++
++	if (wildcard) {
++		/*
++		 * Re-check under the notifier's lock: a concurrent
++		 * consumer may have claimed it since the scan.
++		 */
++		mutex_lock(&wildcard->lock);
++		if (wildcard->cec_adap) {
++			mutex_unlock(&wildcard->lock);
++			wildcard = NULL;
++		} else {
++			kref_get(&wildcard->kref);
++			mutex_unlock(&wildcard->lock);
++			n = wildcard;
++			goto unlock;
++		}
++	}
++
+ 	n = kzalloc_obj(*n);

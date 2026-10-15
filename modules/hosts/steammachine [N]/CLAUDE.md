@@ -8,8 +8,37 @@ NVMe (`nvme0n1`), Realtek RTL8111 ethernet (`enp5s0`), Qualcomm WCN6855 Wi-Fi (`
 
 **No Jovian device module yet.** Upstream support is PR Jovian-Experiments/Jovian-NixOS#584
 (`jovian.devices.steammachine`, plus `fremont-hw-support` firmware). Until it merges, the host sets
-`jovian.hardware.has.amd.gpu` and `linuxPackages_latest` itself. Once it lands: replace both with
-`jovian.devices.steammachine.enable = true;` (which defaults to the Jovian kernel).
+`jovian.hardware.has.amd.gpu` and `linuxPackages_jovian` itself. Once it lands: replace both with
+`jovian.devices.steammachine.enable = true;` (which defaults to the Jovian kernel) — but keep the
+CEC `boot.kernelPatches` entry until Jovian's kernel enables those options itself (the follow-up
+`hdmi_cec` work, not in #584).
+
+**HDMI-CEC (TV remote).** CEC is handled by the board's ChromeOS-style EC (`cros_ec_lpcs`, platform
+device `cros-ec-cec.*`), not by amdgpu. Only Valve's kernel source maps the board in
+`cros-ec-cec.c` (`{ "Valve", "Fremont", "0000:03:00.0", "Port C" }`); mainline's table is Google
+Chromeboxes only, so mainline can't work even with the driver enabled. Jovian's kernel ships without
+`CROS_EC_LPC`/`CEC_CROS_EC`, so the host adds them via `boot.kernelPatches` together with
+`cec-notifier-wildcard-fallback-pairing.patch` (vendored from duckysocks22/Jovian-NixOS `hdmi_cec`
+@ `10befd36`). Without the patch, pairing depends on module load order: amdgpu registers its HDMI
+connector unnamed, the EC looks up "Port C", and if amdgpu registers first the two never pair and
+CEC silently does nothing. That kernel config has no binary cache, so a nixpkgs/Jovian bump means a
+full kernel compile. `cecd` and steamos-manager's CEC hooks come from Jovian's
+`jovian.steamos.enableHdmiCecIntegration` (on by default). The TV needs Anynet+ (Samsung's CEC) on.
+Verified 2026-10-15: physical address 2.0.0.0 (TV HDMI 2), OSD name "Steam Machine"; the Samsung
+remote's arrows/OK/Back arrive on `cecd cros-ec-cec` as KEY_UP/DOWN/LEFT/RIGHT/ENTER/ESC.
+
+**TV-off must not suspend the box** (it's the builder). steamos-manager writes
+`allow_standby = true` into `~deck/.config/cecd/config.d/99-steamos-manager.toml`, which makes cecd
+call logind Suspend on a CEC `<Standby>`. cecd merges `/usr/share/cecd`, `/etc/cecd`, then
+`~/.config/cecd` (each `config.toml` then sorted `config.d/*.toml`, later keys win), so the override
+is a tmpfiles symlink `zz-nixos.toml` in deck's `config.d` — `/etc/cecd` would lose. Check with
+`busctl --user introspect com.steampowered.CecDaemon1 /com/steampowered/CecDaemon1/Daemon` as deck
+(`AllowStandby false`). `wake_tv` stays on.
+
+**Volume.** The TV remote's volume keys drive the TV's own speakers directly and work. Steam-side
+volume → TV over CEC needs `cec-audio-control` (an `org.pipewire.ExternalVolume` varlink backend),
+which needs PipeWire external-volume support that nixpkgs' PipeWire (1.6.8) lacks; upstream Jovian
+also skips it ("ship this once the pipewire side is ready").
 
 **Session flow differs from nixdeck.** nixdeck logs `deck` in from GDM (`jovian-steamdeck`).
 steammachine uses `jovian.steam.autoStart` — SDDM autologin with relogin, and
