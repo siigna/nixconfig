@@ -52,13 +52,16 @@
       # Decky Loader requires CEF remote debugging to inject into the Steam UI.
       # Steam only picks this up at launch, so the file must exist beforehand.
       # (Removing the file later doesn't disable it — Steam caches the state.)
+      # Written to ~/.local/share/Steam, the target of the ~/.steam/steam symlink. Creating
+      # ~/.steam/steam as a directory on a fresh home makes Steam's bootstrap fail with
+      # "Couldn't set up Steam data", because it needs to create that path as the symlink.
       systemd.services.steam-cef-debug = {
         description = "Enable Steam CEF remote debugging for Decky Loader";
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           Type = "oneshot";
           User = "deck";
-          ExecStart = "/bin/sh -c 'mkdir -p ~/.steam/steam && touch ~/.steam/steam/.cef-enable-remote-debugging'";
+          ExecStart = "/bin/sh -c 'mkdir -p ~/.local/share/Steam && touch ~/.local/share/Steam/.cef-enable-remote-debugging'";
         };
       };
 
