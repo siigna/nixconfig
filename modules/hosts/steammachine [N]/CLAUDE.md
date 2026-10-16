@@ -79,6 +79,21 @@ including deliberate ones), suspend/hibernate keys are `ignore`, and Wi-Fi power
 is covered separately by cecd's `allow_standby = false` (see HDMI-CEC). Whether it comes back after a
 power cut is a BIOS setting, not something NixOS controls.
 
+**Light bar (tested live 2026-10-15, nothing configured yet).** Valve's `leds-valve` driver
+(`drivers/leds/rgb/leds-valve.c`, not in mainline; `LEDS_VALVE = module` in Jovian's kernel) loads on
+the `Valve`/`Fremont` DMI match and exposes the 17-LED strip as `/sys/class/leds/valve-leds[0..16]`,
+each a multicolor LED (`brightness`, `multi_intensity` = "R G B"). Strip-wide attributes, present on
+every index: `effect` (`patrol breath factory normal off rainbow demo manual`; per-LED colours only
+show in `manual`), `enabled`, `delay` (0–20), `breath_offset`, `breath_level`, `patrol_num`,
+`color_shift`, `brightness_scale` (BIOS default 56), and `brightness_startup` /
+`multi_intensity_startup` (persisted to the EC). Shipped state: `breath`, `1 90 255`. All root-only;
+the PR author's `led_control` branch chmods them to group `users` (presumably for Steam).
+- `status:white` (`steamdeck-leds`, VLV0100) is Deck code reused here: `led_brightness_multiplier`
+  is 0, and even raised to 100 a blink showed nothing visible. Treat it as not wired.
+- The power-button light (white; firmware shows colours in its boot menu) is EC-driven. The driver
+  only defines a power-button *brightness* register (`0xe7a`) it never exposes; a full-strip
+  red/green/blue test didn't change it. No colour control from Linux.
+
 **Monitoring.** `atop` module: raw logs every 60 s in `/var/log/atop` (28 days), process accounting
 on. `atop-hourly-report.timer` (:02) writes the previous hour's `atopsar` report to
 `/var/lib/atop-reports/<YYYYMMDD>/<HH>.txt`, `latest.txt` being a copy (static-web-server 403s
