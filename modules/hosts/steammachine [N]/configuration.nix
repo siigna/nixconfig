@@ -128,6 +128,23 @@
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8/ddwUdjhE1upKOBd7Npu9HD3UwuwaJxHf/7A1ToRF siigna@nixdeck"
       ];
 
+      # Always on: it's nixdeck's remote builder. Steam suspended it after inactivity (its own
+      # idle timer, per-user UI state we can't pin). Refusing sleep in systemd covers every path
+      # (Steam's timer and power menu, powerbuttond, CEC/keyboard sleep keys): logind rejects the
+      # request and reports CanSuspend=no. Deliberate sleep is gone too; that's the trade-off.
+      systemd.sleep.settings.Sleep = {
+        AllowSuspend = "no";
+        AllowHibernation = "no";
+        AllowHybridSleep = "no";
+        AllowSuspendThenHibernate = "no";
+      };
+      services.logind.settings.Login = {
+        HandleSuspendKey = "ignore";
+        HandleHibernateKey = "ignore";
+      };
+      # Reachability over Tailscale beats the few mW Wi-Fi power saving buys on a mains box.
+      networking.networkmanager.wifi.powersave = false;
+
       # Remote builds must not stutter a game on the TV.
       nix.daemonCPUSchedPolicy = "idle";
       nix.daemonIOSchedClass = "idle";

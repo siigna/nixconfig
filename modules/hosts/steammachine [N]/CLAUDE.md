@@ -70,6 +70,15 @@ the retired Proxmox VM) as both `nix-ssh` and `root`, via `builder.authorizedKey
 nixdeck at install time into `/etc/NetworkManager/system-connections/`; it is deliberately not in
 the repo. `tailscale up` was run once by hand; the node is `steammachine` on the tailnet.
 
+**Never sleeps.** On 2026-10-15 Steam's idle timer suspended the box (journal: Steam logs
+"Closing timeline on system suspend" right before logind's suspend; logind's own IdleAction is
+`ignore`). Steam's idle settings are per-user UI state, so suspend is refused at the bottom instead:
+`systemd.sleep.settings.Sleep` sets `AllowSuspend`/`Hibernation`/`HybridSleep`/
+`SuspendThenHibernate` to `no` (logind then answers `CanSuspend=no` and rejects every request,
+including deliberate ones), suspend/hibernate keys are `ignore`, and Wi-Fi power saving is off. TV-off
+is covered separately by cecd's `allow_standby = false` (see HDMI-CEC). Whether it comes back after a
+power cut is a BIOS setting, not something NixOS controls.
+
 **Monitoring.** `atop` module: raw logs every 60 s in `/var/log/atop` (28 days), process accounting
 on. `atop-hourly-report.timer` (:02) writes the previous hour's `atopsar` report to
 `/var/lib/atop-reports/<YYYYMMDD>/<HH>.txt`, `latest.txt` being a copy (static-web-server 403s
