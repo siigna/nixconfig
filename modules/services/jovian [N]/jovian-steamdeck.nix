@@ -6,6 +6,36 @@
   flake.modules.nixos.jovian-steamdeck =
     { pkgs, ... }:
     {
+      # Override the jovian-stubs package so that our steamos-session-select
+      # wins even inside the Steam bubblewrap, where jovian-stubs/bin is
+      # prepended to PATH via the FHS profile (overriding the system PATH).
+      # This replaces Steam's session switching for nixdeck's GDM flow: kill
+      # gamescope so deck drops back to GDM. Kill it directly via $gamescope_pid
+      # (set by the old gamescope-shim) or fall back to stopping the
+      # gamescope-session.target unit (used by the newer gamescope-session).
+      nixpkgs.overlays = [
+        (self: super: {
+          jovian-stubs = super.jovian-stubs.overrideAttrs (old: {
+            buildCommand =
+              let
+                script = self.writeShellScript "steamos-session-select" ''
+                  session="''${1:-gamescope}"
+                  mkdir -p ~/.local/state
+                  printf '%s\n' "$session" > ~/.local/state/steamos-session-select
+                  if [[ "$session" == "plasma" ]]; then
+                    if [[ -n "$gamescope_pid" ]]; then
+                      kill "$gamescope_pid"
+                    else
+                      systemctl --user stop gamescope-session.target
+                    fi
+                  fi
+                '';
+              in
+              old.buildCommand + "\ninstall -D -m 755 ${script} $out/bin/steamos-session-select\n";
+          });
+        })
+      ];
+
       environment.systemPackages = with pkgs; [
         jupiter-dock-updater-bin
         steamdeck-firmware

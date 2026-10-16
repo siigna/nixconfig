@@ -5,37 +5,6 @@
     {
       imports = [ (inputs.jovian-nixos + "/modules") ];
 
-      # Override the jovian-stubs package so that our steamos-session-select
-      # wins even inside the Steam bubblewrap, where jovian-stubs/bin is
-      # prepended to PATH via the FHS profile (overriding the system PATH).
-      # The stub calls steamosctl switch-to-desktop-mode which hangs because
-      # the SessionManagement1 D-Bus interface is absent in Jovian's
-      # steamos-manager.  Instead, kill gamescope directly via $gamescope_pid
-      # (set by the old gamescope-shim) or fall back to stopping the
-      # gamescope-session.target unit (used by the newer gamescope-session).
-      nixpkgs.overlays = [
-        (self: super: {
-          jovian-stubs = super.jovian-stubs.overrideAttrs (old: {
-            buildCommand =
-              let
-                script = self.writeShellScript "steamos-session-select" ''
-                  session="''${1:-gamescope}"
-                  mkdir -p ~/.local/state
-                  printf '%s\n' "$session" > ~/.local/state/steamos-session-select
-                  if [[ "$session" == "plasma" ]]; then
-                    if [[ -n "$gamescope_pid" ]]; then
-                      kill "$gamescope_pid"
-                    else
-                      systemctl --user stop gamescope-session.target
-                    fi
-                  fi
-                '';
-              in
-              old.buildCommand + "\ninstall -D -m 755 ${script} $out/bin/steamos-session-select\n";
-          });
-        })
-      ];
-
       jovian.steam.enable = true;
       jovian.decky-loader.enable = true;
 
@@ -74,7 +43,10 @@
         partOf = [ "gamescope-session.target" ];
         wantedBy = [ "gamescope-session.target" ];
         serviceConfig = {
-          Type = "oneshot";
+          # Not oneshot: the target is ordered after the units it wants, so a 90 s oneshot kept
+          # gamescope-session.target "starting" that long, and steamos-manager's Switch to
+          # Desktop failed meanwhile (TransactionIsDestructive).
+          Type = "simple";
           ExecStart = pkgs.writeShellScript "steam-launch-watchdog" ''
             sleep 90
             if ! systemctl --user is-active --quiet steam-launcher.service; then
