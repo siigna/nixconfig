@@ -14,6 +14,7 @@
         siigna
         tv-apps
         atop
+        lightbar
       ];
 
       networking.hostName = "steammachine";
@@ -144,6 +145,9 @@
       };
       # Reachability over Tailscale beats the few mW Wi-Fi power saving buys on a mains box.
       networking.networkmanager.wifi.powersave = false;
+
+      # Light bar: CPU/network meter by default; `sudo lightbar mode build|fixed|off` to try others.
+      steammachine.lightbar.enable = true;
 
       # Remote builds must not stutter a game on the TV.
       nix.daemonCPUSchedPolicy = "idle";

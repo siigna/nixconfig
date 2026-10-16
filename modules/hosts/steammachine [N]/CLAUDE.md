@@ -79,7 +79,11 @@ including deliberate ones), suspend/hibernate keys are `ignore`, and Wi-Fi power
 is covered separately by cecd's `allow_standby = false` (see HDMI-CEC). Whether it comes back after a
 power cut is a BIOS setting, not something NixOS controls.
 
-**Light bar (tested live 2026-10-15, nothing configured yet).** Valve's `leds-valve` driver
+**Light bar.** Driven by the `lightbar` module (`steammachine.lightbar.mode`: `meter` default,
+`build`, `fixed`, `off`; `sudo lightbar mode <m>` overrides until reboot, `lightbar reset`). One
+root daemon (`lightbar.py`) writes only changed LEDs and restores the shipped breathing blue on stop.
+Build mode keys off processes owned by `nixbld*` users; failures aren't visible on the builder side.
+Hardware details: Valve's `leds-valve` driver
 (`drivers/leds/rgb/leds-valve.c`, not in mainline; `LEDS_VALVE = module` in Jovian's kernel) loads on
 the `Valve`/`Fremont` DMI match and exposes the 17-LED strip as `/sys/class/leds/valve-leds[0..16]`,
 each a multicolor LED (`brightness`, `multi_intensity` = "R G B"). Strip-wide attributes, present on
