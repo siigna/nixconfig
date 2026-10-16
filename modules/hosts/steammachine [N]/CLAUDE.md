@@ -41,11 +41,26 @@ which needs PipeWire external-volume support that nixpkgs' PipeWire (1.6.8) lack
 also skips it ("ship this once the pipewire side is ready").
 
 **Session flow differs from nixdeck.** nixdeck logs `deck` in from GDM (`jovian-steamdeck`).
-steammachine uses `jovian.steam.autoStart` — SDDM autologin with relogin, and
-`desktopSession = "gamescope-wayland"`, so Switch to Desktop relaunches gaming mode. It does not
-import `nixos-base` (GNOME/GDM/printing); `nixos-common` carries the shared bits.
-`jovian-setup-desktop-session` is disabled: it pushes `desktopSession` into steamos-manager, which
-rejects `gamescope-wayland` ("Invalid desktop session") and leaves a failed user unit.
+steammachine is SteamOS-style: `jovian.steam.autoStart` (SDDM autologin with relogin) into gaming
+mode, `desktopSession = "plasma"`, Plasma 6 enabled (plus X11, because `holo-session-select` maps the
+bare `plasma` name to `plasmax11.desktop`). It does not import `nixos-base` (GNOME/GDM/printing).
+- Switch to Desktop goes through steamos-manager's `SessionManagement1`: it writes the one-shot SDDM
+  override `/etc/sddm.conf.d/zzt-holo-temp-login.conf` (`Session=plasma.desktop`) and ends the
+  gamescope session; the *running* SDDM (not restarted) reads it on relogin. Before Plasma existed
+  this stranded the box at the greeter. Jovian's DM-start failsafe deletes the old file name only, so
+  the host also deletes `zzt-holo-temp-login.conf` in `ExecStartPre` (covers reboots).
+- steamos-manager validates the desktop session against the `*-desktops/share` path in its
+  `XDG_DATA_DIRS`, fixed at session start. After adding/removing a desktop, restart `user@1000` (not
+  just SDDM), or `jovian-setup-desktop-session` fails with "Invalid desktop session".
+- In Steam's sandbox `jovian-stubs/bin` is first on PATH; the host links `steamos-session-select`
+  there to `holo-session-select` (→ `steamosctl`), so "gamescope" really returns to gaming mode.
+- Desktop mode autostarts `steam -silent` (KDE-only XDG autostart) so Steam Input drives the
+  controller there; a "Return to Gaming Mode" menu entry runs `steamosctl switch-to-game-mode`
+  (logging out of Plasma also returns).
+
+**Streaming apps** come from the `tv-apps` module (`plex-htpc`, Chrome kiosk launchers
+`tv-youtube`/`tv-netflix`/`tv-prime`, each with a .desktop entry). They're added to the Steam library
+by hand once, via desktop-mode Steam's "Add a Non-Steam Game".
 
 **Builder.** `builder-service` accepts nixdeck's root key (`/root/.ssh/nixbuilder-key`, named for
 the retired Proxmox VM) as both `nix-ssh` and `root`, via `builder.authorizedKeys`.
