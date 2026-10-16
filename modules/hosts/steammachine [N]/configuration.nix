@@ -13,6 +13,7 @@
         builder-service
         siigna
         tv-apps
+        atop
       ];
 
       networking.hostName = "steammachine";

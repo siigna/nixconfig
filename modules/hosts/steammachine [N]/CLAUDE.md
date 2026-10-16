@@ -70,6 +70,11 @@ the retired Proxmox VM) as both `nix-ssh` and `root`, via `builder.authorizedKey
 nixdeck at install time into `/etc/NetworkManager/system-connections/`; it is deliberately not in
 the repo. `tailscale up` was run once by hand; the node is `steammachine` on the tailnet.
 
+**Monitoring.** `atop` module: raw logs every 60 s in `/var/log/atop` (28 days), process accounting
+on. `atop-hourly-report.timer` (:02) writes the previous hour's `atopsar` report to
+`/var/lib/atop-reports/<YYYYMMDD>/<HH>.txt`, `latest.txt` being a copy (static-web-server 403s
+symlinks). Browse at `http://steammachine:8088/` over Tailscale; port 8088 isn't opened on the LAN.
+
 ## Deploy
 
 ```bash
