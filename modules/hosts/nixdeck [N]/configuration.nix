@@ -28,6 +28,10 @@
     ];
     nixdeck.useGrub = false;
     networking.hostName = "nixdeck";
+    # Substitution, unpacking and the preferLocalBuild derivations of a rebuild still run here;
+    # keep them from starving the desktop or a game.
+    nix.daemonCPUSchedPolicy = "idle";
+    nix.daemonIOSchedClass = "idle";
     system.stateVersion = "22.11";
   };
 }

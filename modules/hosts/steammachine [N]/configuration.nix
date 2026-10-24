@@ -1,4 +1,7 @@
 { inputs, ... }:
+let
+  siignaNixdeckKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8/ddwUdjhE1upKOBd7Npu9HD3UwuwaJxHf/7A1ToRF siigna@nixdeck";
+in
 {
   # Steam Machine ("fremont"): Steam on the TV, remote builder the rest of the time.
   flake.modules.nixos.steammachine =
@@ -128,10 +131,10 @@
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ+zOqWYTT9i14P/8mbeD+hpazV7JlBCyWuHFhMrP3Bx root@nixdeck"
       ];
 
-      # siigna@nixdeck (~/.ssh/id_ed25519). Password SSH is off (builder-service).
-      users.users.siigna.openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG8/ddwUdjhE1upKOBd7Npu9HD3UwuwaJxHf/7A1ToRF siigna@nixdeck"
-      ];
+      # siigna@nixdeck (~/.ssh/id_ed25519). Password SSH is off (builder-service). Also on nix-ssh
+      # (not root) so an unprivileged `make build` can use this box as --build-host.
+      users.users.siigna.openssh.authorizedKeys.keys = [ siignaNixdeckKey ];
+      users.users.nix-ssh.openssh.authorizedKeys.keys = [ siignaNixdeckKey ];
 
       # Always on: it's nixdeck's remote builder. Steam suspended it after inactivity (its own
       # idle timer, per-user UI state we can't pin). Refusing sleep in systemd covers every path

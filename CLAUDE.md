@@ -12,6 +12,7 @@ make update   # nix flake update (refresh flake.lock)
 
 make build FLAKE=0      # same targets but using /etc/nixos (legacy fallback)
 make build NOBUILDERS=1 # build without distributed builders (bypasses nixbuild.net)
+make build BUILDHOST=   # realise locally instead of on steammachine (e.g. it's off)
 make update-claude      # update only the claude-code-nix flake input
 
 make build HOST=steammachine                            # build another host
@@ -19,6 +20,9 @@ make switch HOST=steammachine TARGET=root@steammachine  # deploy over SSH
 ```
 
 `build`/`switch`/`boot` target `.#$(HOST)` (default `nixdeck`); `TARGET` adds `--target-host`.
+`BUILDHOST` (default `nix-ssh@steammachine`) adds `--build-host`: evaluation stays local, but
+substitution and every build (including `preferLocalBuild` ones) happen on the Steam Machine and only
+the finished closure is copied back, so a big nixpkgs bump doesn't swamp the Deck.
 Evaluation is pure — if a build ever demands `--impure`, something has grown an absolute path or
 `builtins.getEnv`; fix that rather than adding the flag back.
 

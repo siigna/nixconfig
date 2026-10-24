@@ -34,6 +34,10 @@
           isSystemUser = true;
           group = "nix-ssh";
           shell = pkgs.bash;
+          # `nixos-rebuild build --build-host` leaves a `result` out-link in the remote cwd; the
+          # default /var/empty isn't writable. It doubles as a GC root for the last remote build.
+          home = "/var/lib/nix-ssh";
+          createHome = true;
           openssh.authorizedKeys.keys = config.builder.authorizedKeys;
         };
         users.groups.nix-ssh = { };

@@ -16,20 +16,33 @@ else
 TARGET_ARG =
 endif
 
+# Evaluate here, but realise (substitute + build) on the Steam Machine and copy only the finished
+# closure back, so nixdeck doesn't fetch/unpack thousands of paths itself. BUILDHOST= to do it all
+# locally (e.g. steammachine is off).
+BUILDHOST ?= nix-ssh@steammachine
+
+ifneq ($(BUILDHOST),)
+BUILDHOST_ARG = --build-host $(BUILDHOST)
+else
+BUILDHOST_ARG =
+endif
+
 ifeq ($(NOBUILDERS),1)
 BUILDERS_ARG = --builders ''
 else
 BUILDERS_ARG =
 endif
 
+# With --build-host the out-link lands on the build host, so link ./result here from the printed path.
 build:
-	nixos-rebuild build $(FLAKE_ARG) $(BUILDERS_ARG)
+	@out=$$(nixos-rebuild build $(FLAKE_ARG) $(BUILDERS_ARG) $(BUILDHOST_ARG)) && \
+	  nix-store --realise "$$out" --add-root result --indirect >/dev/null && echo "$$out"
 
 switch:
-	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG) $(TARGET_ARG)
+	sudo nixos-rebuild switch $(FLAKE_ARG) $(BUILDERS_ARG) $(BUILDHOST_ARG) $(TARGET_ARG)
 
 boot:
-	sudo nixos-rebuild boot $(FLAKE_ARG) $(BUILDERS_ARG) $(TARGET_ARG)
+	sudo nixos-rebuild boot $(FLAKE_ARG) $(BUILDERS_ARG) $(BUILDHOST_ARG) $(TARGET_ARG)
 
 update:
 	nix flake update
