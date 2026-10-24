@@ -269,16 +269,15 @@
     "jovian-nixos": {
       "flake": false,
       "locked": {
-        "lastModified": 1792757410,
-        "narHash": "sha256-WnpYd1US1ZIpdIkE4fUPlbTgrUcR7+7Ki7mCxs3XGGo=",
+        "lastModified": 1792825596,
+        "narHash": "sha256-xSSy3Sadkbv/9aCNxE/VEtdMNZAYByypzXKgFphhN/w=",
         "owner": "Jovian-Experiments",
         "repo": "Jovian-NixOS",
-        "rev": "b591469c7c7d4d201625b73c24c8a3da3b3a1663",
+        "rev": "37f5cfbd0c12d5373555f5b54893bbc0f5d0ad20",
         "type": "github"
       },
       "original": {
         "owner": "Jovian-Experiments",
-        "ref": "b591469c",
         "repo": "Jovian-NixOS",
         "type": "github"
       }

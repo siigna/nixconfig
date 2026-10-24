@@ -11,10 +11,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Steam Deck / Jovian-NixOS — pinned to a commit
+    # Steam Deck / Jovian-NixOS — tracks master; flake.lock pins it and `make update` moves it
     jovian-nixos = {
       flake = false;
-      url = "github:Jovian-Experiments/Jovian-NixOS/b591469c";
+      url = "github:Jovian-Experiments/Jovian-NixOS";
     };
 
     # Custom overlay packages (adi1090x-plymouth, etc.)
