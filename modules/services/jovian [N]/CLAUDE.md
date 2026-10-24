@@ -8,7 +8,7 @@ session switching instead, and links `steamos-session-select` to `holo-session-s
 The XRGaming plugin workarounds (`su` shim, empty `LD_LIBRARY_PATH`, `ENABLE_VKBASALT`) live in
 `breezy.nix`.
 
-On nixdeck, `jovian-stubs` is overridden via `nixpkgs.overlays` to add a `steamos-session-select` that kills `$gamescope_pid` directly (or stops `gamescope-session.target`), dropping `deck` back to GDM. It was written when Jovian's `steamos-manager` lacked the `SessionManagement1` D-Bus interface; steamos-manager 26.4.1 has it (`SwitchToDesktopMode`, used by steammachine), so the stub now only exists for nixdeck's GDM flow.
+On nixdeck, `jovian-stubs` is overridden via `nixpkgs.overlays` (inside `jovianPackages.overrideScope` — Jovian packages live in that scope, and a top-level override is silently ignored) to add a `steamos-session-select` that kills `$gamescope_pid` directly (or stops `gamescope-session.target`), dropping `deck` back to GDM. It was written when Jovian's `steamos-manager` lacked the `SessionManagement1` D-Bus interface; steamos-manager 26.4.1 has it (`SwitchToDesktopMode`, used by steammachine), so the stub now only exists for nixdeck's GDM flow.
 
 The stub is injected at the front of PATH inside the Steam bubblewrap via the FHS profile (`steam-run-1.0.0.85-fhsenv-profile`), so system-level PATH overrides have no effect — the overlay is the only way to intercept it.
 

@@ -26,6 +26,7 @@
           "ventoy-1.1.07"
           "ventoy-1.1.10"
           "ventoy-1.1.17"
+          "ventoy-1.1.18"
         ];
 
         boot.supportedFilesystems = [ "ntfs" ];

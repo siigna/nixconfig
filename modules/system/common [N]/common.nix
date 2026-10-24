@@ -22,10 +22,57 @@
           inputs.hermes-agent.overlays.default
           # Upstream overlay.nix reads the deprecated `prev.system` alias (eval warning);
           # same overlay, keyed on stdenv.hostPlatform.system instead.
-          (final: _: import "${inputs.vesc-tool}/pkgs" {
-            src = inputs.vesc-tool;
-            bldc-fw = inputs.vesc-tool.inputs.bldc-fw.packages.${final.stdenv.hostPlatform.system}.bldc-fw;
-            pkgs = final;
+          (
+            final: _:
+            import "${inputs.vesc-tool}/pkgs" {
+              src = inputs.vesc-tool;
+              # gcc-arm-embedded-14 from cache.nixos.org segfaults on every binary (patchelf bug,
+              # NixOS/patchelf#674): set RPATH before the interpreter, as NixOS/nixpkgs#577329 does.
+              # Drop the override once that fix reaches nixos-unstable.
+              bldc-fw =
+                inputs.vesc-tool.inputs.bldc-fw.packages.${final.stdenv.hostPlatform.system}.bldc-fw.override
+                  {
+                    gcc-arm-embedded-14 = final.gcc-arm-embedded-14.overrideAttrs {
+                      preFixup = ''
+                        find $out -type f | while read f; do
+                          patchelf "$f" > /dev/null 2>&1 || continue
+                          patchelf --set-rpath ${
+                            final.lib.makeLibraryPath [
+                              "$out"
+                              final.stdenv.cc.cc
+                              final.ncurses6
+                              final.libxcrypt-legacy
+                              final.xz
+                              final.zstd
+                            ]
+                          } "$f" || true
+                          patchelf --set-interpreter $(cat ${final.stdenv.cc}/nix-support/dynamic-linker) "$f" || true
+                        done
+                      '';
+                    };
+                  };
+              pkgs = final;
+            }
+          )
+          # patchelf 0.19.2 aborts on semgrep-core's prebuilt binary (tracking:
+          # NixOS/nixpkgs#577387). Fix it up with 0.15.2, as upstream does for rgp; drop once
+          # nixos-unstable has a fixed patchelf.
+          (final: prev: {
+            semgrep = final.python3.pkgs.toPythonApplication (
+              final.python3.pkgs.semgrep.override {
+                semgrep-core = final.python3.pkgs.semgrep.semgrep-core.override {
+                  patchelf = prev.patchelf.overrideAttrs (
+                    finalAttrs: _: {
+                      version = "0.15.2";
+                      src = final.fetchurl {
+                        url = "https://github.com/NixOS/patchelf/releases/download/${finalAttrs.version}/patchelf-${finalAttrs.version}.tar.bz2";
+                        hash = "sha256-F3RfVkFZyOIo/EEtplogSLhGxLa0Igt3y/IkFuAvLXw=";
+                      };
+                    }
+                  );
+                };
+              }
+            );
           })
           # obdium (Tauri v1) requires webkitgtk-4.0 + libsoup-2.4, both removed/insecure
           # in current nixpkgs. Build it from a pinned nixpkgs that still has them.

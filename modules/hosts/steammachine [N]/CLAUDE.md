@@ -6,12 +6,19 @@ as `deck`, and is nixdeck's remote builder (`nixbuild.nix`, ahead of nixbuild.ne
 Hardware as installed: AMD Custom CPU 1772 (12 threads), Navi 33 GPU, 16 GB RAM, 512 GB Kingston
 NVMe (`nvme0n1`), Realtek RTL8111 ethernet (`enp5s0`), Qualcomm WCN6855 Wi-Fi (`wlp6s0`, ath11k).
 
-**No Jovian device module yet.** Upstream support is PR Jovian-Experiments/Jovian-NixOS#584
-(`jovian.devices.steammachine`, plus `fremont-hw-support` firmware). Until it merges, the host sets
-`jovian.hardware.has.amd.gpu` and `linuxPackages_jovian` itself. Once it lands: replace both with
+**No Jovian device module yet.** Two open upstream PRs add `jovian.devices.steammachine`:
+Jovian-Experiments/Jovian-NixOS#584 (duckysocks22) and #598 (K900, WIP as of 2026-10-23;
+`linux-firmware-holo`, fwupd BIOS updates via `fremont-hw-support`, and `enableLightbarControl`,
+which makes `/sys/class/leds/*` group-writable for `users` — check it against the `lightbar`
+daemon). Until one merges, the host sets `jovian.hardware.has.amd.gpu` and
+`jovianPackages.linuxPackages` itself. Once it lands: replace both with
 `jovian.devices.steammachine.enable = true;` (which defaults to the Jovian kernel) — but keep the
 CEC `boot.kernelPatches` entry until Jovian's kernel enables those options itself (the follow-up
-`hdmi_cec` work, not in #584).
+`hdmi_cec` work, in neither PR).
+
+**Jovian packages live in a scope** (`pkgs.jovianPackages.*`, since Jovian #594, 2026-10-18).
+Overrides of Jovian packages must go through `jovianPackages.overrideScope`; a top-level
+`jovian-stubs = prev.jovian-stubs...` overlay still evaluates but nothing reads it.
 
 **HDMI-CEC (TV remote).** CEC is handled by the board's ChromeOS-style EC (`cros_ec_lpcs`, platform
 device `cros-ec-cec.*`), not by amdgpu. Only Valve's kernel source maps the board in

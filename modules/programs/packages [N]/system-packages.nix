@@ -50,7 +50,6 @@
         screen
         spotify
         telegram-desktop
-        tmate
         tmux
         tree
         unzip
@@ -69,7 +68,7 @@
         qelectrotech
         vscodium-fhs
         neovim
-        galileo-mura
+        jovianPackages.galileo-mura
         blackbox-terminal
         zoom-us
         linux-wifi-hotspot
@@ -98,7 +97,7 @@
         rustup
         httptoolkit
         cargo-audit
-        cargo-llvm-cov
+        # cargo-llvm-cov # broken upstream: NixOS/nixpkgs#576588
         cargo-nextest
         cargo-make
         rust-analyzer

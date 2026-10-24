@@ -11,10 +11,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Steam Deck / Jovian-NixOS — pinned to same commit as original config
+    # Steam Deck / Jovian-NixOS — pinned to a commit
     jovian-nixos = {
       flake = false;
-      url = "github:Jovian-Experiments/Jovian-NixOS/0833891";
+      url = "github:Jovian-Experiments/Jovian-NixOS/b591469c";
     };
 
     # Custom overlay packages (adi1090x-plymouth, etc.)

@@ -15,28 +15,32 @@
       # gamescope-session.target unit (used by the newer gamescope-session).
       nixpkgs.overlays = [
         (self: super: {
-          jovian-stubs = super.jovian-stubs.overrideAttrs (old: {
-            buildCommand =
-              let
-                script = self.writeShellScript "steamos-session-select" ''
-                  session="''${1:-gamescope}"
-                  mkdir -p ~/.local/state
-                  printf '%s\n' "$session" > ~/.local/state/steamos-session-select
-                  if [[ "$session" == "plasma" ]]; then
-                    if [[ -n "$gamescope_pid" ]]; then
-                      kill "$gamescope_pid"
-                    else
-                      systemctl --user stop gamescope-session.target
-                    fi
-                  fi
-                '';
-              in
-              old.buildCommand + "\ninstall -D -m 755 ${script} $out/bin/steamos-session-select\n";
-          });
+          jovianPackages = super.jovianPackages.overrideScope (
+            _: jsuper: {
+              jovian-stubs = jsuper.jovian-stubs.overrideAttrs (old: {
+                buildCommand =
+                  let
+                    script = self.writeShellScript "steamos-session-select" ''
+                      session="''${1:-gamescope}"
+                      mkdir -p ~/.local/state
+                      printf '%s\n' "$session" > ~/.local/state/steamos-session-select
+                      if [[ "$session" == "plasma" ]]; then
+                        if [[ -n "$gamescope_pid" ]]; then
+                          kill "$gamescope_pid"
+                        else
+                          systemctl --user stop gamescope-session.target
+                        fi
+                      fi
+                    '';
+                  in
+                  old.buildCommand + "\ninstall -D -m 755 ${script} $out/bin/steamos-session-select\n";
+              });
+            }
+          );
         })
       ];
 
-      environment.systemPackages = with pkgs; [
+      environment.systemPackages = with pkgs.jovianPackages; [
         jupiter-dock-updater-bin
         steamdeck-firmware
       ];

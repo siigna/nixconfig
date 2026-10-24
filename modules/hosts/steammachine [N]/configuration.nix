@@ -61,12 +61,16 @@
       # steamos-session-select (holo-session-select -> steamosctl), so "gamescope" switches back
       # to gaming mode. nixdeck replaces it with its own GDM stub instead (jovian-steamdeck).
       nixpkgs.overlays = [
-        (final: prev: {
-          jovian-stubs = prev.jovian-stubs.overrideAttrs (old: {
-            buildCommand = old.buildCommand + ''
-              ln -s ${final.holo-session-selection}/bin/holo-session-select $out/bin/steamos-session-select
-            '';
-          });
+        (_: prev: {
+          jovianPackages = prev.jovianPackages.overrideScope (
+            jfinal: jprev: {
+              jovian-stubs = jprev.jovian-stubs.overrideAttrs (old: {
+                buildCommand = old.buildCommand + ''
+                  ln -s ${jfinal.holo-session-selection}/bin/holo-session-select $out/bin/steamos-session-select
+                '';
+              });
+            }
+          );
         })
       ];
 
@@ -80,7 +84,7 @@
       # The patch makes cec-notifier pair amdgpu's unnamed connector with the EC's "Port C"
       # lookup whichever registers first; otherwise CEC silently fails when amdgpu wins.
       # Jovian's cecd (jovian.steamos.enableHdmiCecIntegration) picks up /dev/cec0.
-      boot.kernelPackages = pkgs.linuxPackages_jovian;
+      boot.kernelPackages = pkgs.jovianPackages.linuxPackages;
       boot.kernelPatches = [
         {
           name = "fremont-cros-ec-cec";
