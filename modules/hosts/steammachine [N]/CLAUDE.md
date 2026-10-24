@@ -116,6 +116,21 @@ on. `atop-hourly-report.timer` (:02) writes the previous hour's `atopsar` report
 `/var/lib/atop-reports/<YYYYMMDD>/<HH>.txt`, `latest.txt` being a copy (static-web-server 403s
 symlinks). Browse at `http://steammachine:8088/` over Tailscale; port 8088 isn't opened on the LAN.
 
+## Later
+
+Ideas noted 2026-10-24, not started. The CEC two come from Twsts/steamos-cec-toolkit (a SteamOS
+curl-pipe-bash installer built on `cecd`; take the ideas, not the code).
+
+- **Home button wakes the TV.** A controller Home/Guide/Steam press sends CEC wake + Active Source
+  so the TV powers on and switches to this input. Today the TV only wakes when the gaming session
+  starts (`cecd`'s `wake_tv`). The toolkit has a HID fallback for the original Steam Controller,
+  whose Home button isn't a normal gamepad event.
+- **Recover gamescope after a CEC wake.** If the display comes back broken after the TV wakes or
+  switches input, restart the gamescope session automatically instead of by hand.
+- **HDMI audio passthrough.** Dolby/DTS bitstream over HDMI doesn't work on SteamOS either
+  (ValveSoftware/SteamOS#989, open); presumably the same here, so expect Plex to decode to PCM
+  (not checked). Watch that issue before trying passthrough in Plex HTPC.
+
 ## Deploy
 
 ```bash
