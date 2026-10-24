@@ -33,6 +33,20 @@
     # Always-up-to-date Codex CLI
     codex-cli-nix.url = "github:sadjow/codex-cli-nix";
 
+    # Hermes Agent (Nous Research) — packaged upstream as a uv2nix flake
+    hermes-agent = {
+      url = "github:NousResearch/hermes-agent";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-parts.follows = "flake-parts";
+      inputs.home-manager.follows = "home-manager";
+    };
+
+    # Prebuilt nix-index database (weekly) + comma + command-not-found hook
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # VESC Tool — motor controller IDE, packaged upstream as a flake
     vesc-tool = {
       url = "github:vedderb/vesc_tool";

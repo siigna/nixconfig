@@ -8,6 +8,7 @@ self: super: {
   goccc = super.callPackage ./goccc { };
   dippy = super.callPackage ./dippy { };
   agnix = super.callPackage ./agnix { };
+  empryo = super.callPackage ./empryo { };
   claude-plugins = self.callPackage ./claude-plugins { };
   # Downgrade alsa-ucm-conf to 1.2.8
   # https://github.com/Jovian-Experiments/Jovian-NixOS/issues/88

@@ -24,6 +24,7 @@
       obdium
       vesc-tool
       claude-code
+      nix-index
     ];
     nixdeck.useGrub = false;
     networking.hostName = "nixdeck";

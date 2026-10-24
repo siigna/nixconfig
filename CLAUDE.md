@@ -95,6 +95,7 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `nix-build-scratch` | `system/nix-build-scratch [N]/nix-build-scratch.nix` — build sandbox scratch on an ext4 image inside the NTFS volume |
 | `boucheblaster` | `users/boucheblaster [N]/boucheblaster.nix` — secondary user (dialout, networkmanager, plugdev, uucp) |
 | `claude-code` | `programs/claude-code [N]/claude-code.nix` — Claude Code + `/etc/claude-code/managed-settings.json` (statusline, hooks, pinned plugins) |
+| `nix-index` | `programs/nix-index [N]/nix-index.nix` — prebuilt nix-index database (nix-index-database input), `nix-locate`, `comma`, command-not-found hook (nixdeck) |
 
 ### Per-module notes
 
@@ -113,9 +114,10 @@ when a file in that directory is read. Read the one for the module before changi
 ### Custom packages
 
 `packages/` is a nixpkgs overlay (flake input `packages`, `flake = false`). `nixos-common` sets
-`nixpkgs.overlays` to four overlays, in order: `(import inputs.packages)`, `claude-code-nix`,
-`codex-cli-nix`, `vesc-tool`. The last three come from flake inputs that track upstream faster than
-nixpkgs does.
+`nixpkgs.overlays` to five overlays, in order: `(import inputs.packages)`, `claude-code-nix`,
+`codex-cli-nix`, `hermes-agent`, `vesc-tool`. The last four come from flake inputs that track upstream
+faster than nixpkgs does (`hermes-agent` isn't in nixpkgs at all; its overlay aliases the flake's own
+uv2nix build, with `nixpkgs` followed).
 
 | Package | Path | Notes |
 |---|---|---|
@@ -132,6 +134,7 @@ nixpkgs does.
 | `dippy` | `packages/dippy/` | Claude Code hook auto-approving read-only shell commands |
 | `agnix` | `packages/agnix/` | Linter for CLAUDE.md, skills, hooks, plugin and MCP config |
 | `claude-plugins` | `packages/claude-plugins/` | Local plugin marketplace built from pinned upstream repos |
+| `empryo` | `packages/empryo/` | Empryo (ex-SoulForge) AI coding agent; prebuilt unfree Bun binary, `deps/` kept beside it in `libexec` |
 
 **Dual-nixpkgs strategy**: packages requiring `webkitgtk_4_0` (obdium, and breezy-gnome's build dependencies) accept a `pkgs-webkitgtk40` argument wired to the pinned nixpkgs. The overlay's `default.nix` passes it through so these packages build without polluting the main nixpkgs set.
 

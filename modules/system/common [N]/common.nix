@@ -19,6 +19,7 @@
           (import inputs.packages)
           inputs.claude-code-nix.overlays.default
           inputs.codex-cli-nix.overlays.default
+          inputs.hermes-agent.overlays.default
           # Upstream overlay.nix reads the deprecated `prev.system` alias (eval warning);
           # same overlay, keyed on stdenv.hostPlatform.system instead.
           (final: _: import "${inputs.vesc-tool}/pkgs" {

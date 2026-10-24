@@ -117,6 +117,10 @@
         bambu-studio
         bottles-unwrapped
         codex
+        empryo
+        hermes-agent
+        opencode
+        pi-coding-agent
         rustscan
         nmap
         binwalk
