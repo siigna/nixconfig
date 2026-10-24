@@ -124,7 +124,7 @@
           ];
           default = "meter";
           description = ''
-            meter: CPU and network bar graphs. build: breathe build.color while Nix builds run,
+            meter: CPU, GPU and network bar graphs. build: breathe build.color while Nix builds run,
             fixed look otherwise. fixed: the fixed.* look. off: strip dark.
           '';
         };
@@ -143,12 +143,24 @@
         meter = {
           cpuLeds = mkOption {
             type = types.listOf (types.ints.between 0 16);
-            default = lib.range 0 8;
+            default = lib.range 0 5;
             description = "LED indices of the CPU bar, bottom of the bar first.";
+          };
+          gpuLeds = mkOption {
+            type = types.listOf (types.ints.between 0 16);
+            default = lib.range 6 11;
+            description = "LED indices of the GPU bar (amdgpu gpu_busy_percent), bottom first; [ ] hides it.";
+          };
+          gpuColor = rgb // {
+            default = [
+              190
+              0
+              255
+            ];
           };
           netLeds = mkOption {
             type = types.listOf (types.ints.between 0 16);
-            default = lib.range 9 16;
+            default = lib.range 12 16;
             description = "LED indices of the network bar, bottom of the bar first.";
           };
           netInterface = mkOption {

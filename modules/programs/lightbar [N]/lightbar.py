@@ -1,10 +1,11 @@
 """Steam Machine light bar daemon (leds-valve sysfs).
 
-Modes: meter (CPU + network bar graph), build (breathe while Nix builds run),
+Modes: meter (CPU + GPU + network bar graph), build (breathe while Nix builds run),
 fixed (static effect/colour), off. The configured mode comes from the JSON
 file given as argv[1]; /run/lightbar/mode overrides it at runtime.
 """
 
+import glob
 import grp
 import json
 import math
@@ -80,6 +81,21 @@ def net_bytes(iface):
         return None
 
 
+def gpu_busy_path():
+    """amdgpu's busy percentage for the first GPU exposing one, or None."""
+    paths = sorted(glob.glob("/sys/class/drm/card[0-9]*/device/gpu_busy_percent"))
+    return paths[0] if paths else None
+
+
+def gpu_busy(path):
+    if path is None:
+        return 0.0
+    try:
+        return max(0, min(100, int(read(path)))) / 100.0
+    except (OSError, ValueError):  # EPERM/EBUSY while runtime-suspended or resetting
+        return 0.0
+
+
 def mix(a, b, t):
     return tuple(a[k] + (b[k] - a[k]) * t for k in range(3))
 
@@ -108,7 +124,9 @@ class Meter:
         self.prev_cpu = cpu_times()
         self.prev_net = net_bytes(cfg["netInterface"])
         self.prev_t = time.monotonic()
+        self.gpu_path = gpu_busy_path() if cfg["gpuLeds"] else None
         self.cpu = 0.0
+        self.gpu = 0.0
         self.net = 0.0
 
     def tick(self, strip):
@@ -134,8 +152,11 @@ class Meter:
 
         a = cfg["smoothing"]
         self.cpu += (busy - self.cpu) * a
+        self.gpu += (gpu_busy(self.gpu_path) - self.gpu) * a
         self.net += (net_level - self.net) * a
         draw_bar(strip, cfg["cpuLeds"], self.cpu, cpu_colour)
+        gpu_rgb = tuple(cfg["gpuColor"])
+        draw_bar(strip, cfg["gpuLeds"], self.gpu, lambda _pos: gpu_rgb)
         net_rgb = tuple(cfg["netColor"])
         draw_bar(strip, cfg["netLeds"], self.net, lambda _pos: net_rgb)
 
