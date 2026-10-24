@@ -1,6 +1,7 @@
 """Steam Machine light bar daemon (leds-valve sysfs).
 
-Modes: meter (CPU + GPU + network bar graph), build (breathe while Nix builds run),
+Modes: meter (CPU + GPU + network bar graph; the CPU/GPU bars pulse when RAM/VRAM run
+high), build (breathe while Nix builds run),
 fixed (static effect/colour), off. The configured mode comes from the JSON
 file given as argv[1]; /run/lightbar/mode overrides it at runtime.
 """
@@ -81,19 +82,34 @@ def net_bytes(iface):
         return None
 
 
-def gpu_busy_path():
-    """amdgpu's busy percentage for the first GPU exposing one, or None."""
+def ram_used():
+    info = {}
+    for line in read("/proc/meminfo").splitlines():
+        key, value = line.split(":", 1)
+        info[key] = int(value.split()[0])
+    return 1.0 - info["MemAvailable"] / info["MemTotal"]
+
+
+def gpu_device():
+    """sysfs device dir of the first GPU exposing amdgpu's busy percentage, or None."""
     paths = sorted(glob.glob("/sys/class/drm/card[0-9]*/device/gpu_busy_percent"))
-    return paths[0] if paths else None
+    return os.path.dirname(paths[0]) if paths else None
 
 
-def gpu_busy(path):
-    if path is None:
-        return 0.0
+def gpu_stats(dev):
+    """(busy, vram used) as fractions; a failed read (EPERM/EBUSY while runtime-suspended or
+    resetting) counts as idle."""
+    if dev is None:
+        return 0.0, 0.0
     try:
-        return max(0, min(100, int(read(path)))) / 100.0
-    except (OSError, ValueError):  # EPERM/EBUSY while runtime-suspended or resetting
-        return 0.0
+        busy = max(0, min(100, int(read(dev + "/gpu_busy_percent")))) / 100.0
+    except (OSError, ValueError):
+        busy = 0.0
+    try:
+        vram = int(read(dev + "/mem_info_vram_used")) / int(read(dev + "/mem_info_vram_total"))
+    except (OSError, ValueError, ZeroDivisionError):
+        vram = 0.0
+    return busy, vram
 
 
 def mix(a, b, t):
@@ -108,13 +124,32 @@ def cpu_colour(pos):
     return mix(yellow, red, (pos - 0.5) * 2)
 
 
-def draw_bar(strip, leds, level, colour_at):
-    """Light len(leds) * level LEDs; the boundary LED is partially lit."""
+RED = (255, 0, 0)
+WARN_FLOOR = 0.3  # unlit LEDs of a warning bar pulse up to this fraction of the bar colour
+
+
+def warning(used, cfg, phase):
+    """None below memWarnPercent; otherwise (red, dim) for this point of the pulse."""
+    if used * 100 < cfg["memWarnPercent"]:
+        return None
+    p = 0.5 - 0.5 * math.cos(2 * math.pi * phase)  # 0 -> 1 -> 0 over one period
+    if used * 100 < cfg["memAlarmPercent"]:
+        return 0.0, 1.0 - 0.75 * p  # pulse the brightness
+    return p, 1.0  # cross-fade between the bar colours and red
+
+
+def draw_bar(strip, leds, level, colour_at, warn=None):
+    """Light len(leds) * level LEDs; the boundary LED is partially lit. With a warning the
+    whole bar pulses: lit LEDs per warning(), unlit ones faintly."""
     n = len(leds)
     lit = level * n
     for k, i in enumerate(leds):
         fill = max(0.0, min(1.0, lit - k))
         colour = colour_at(k / max(1, n - 1))
+        if warn is not None:
+            red, dim = warn
+            colour = mix(colour, RED, red)
+            fill = dim * max(fill, WARN_FLOOR)
         strip.led(i, tuple(c * fill for c in colour))
 
 
@@ -124,12 +159,13 @@ class Meter:
         self.prev_cpu = cpu_times()
         self.prev_net = net_bytes(cfg["netInterface"])
         self.prev_t = time.monotonic()
-        self.gpu_path = gpu_busy_path() if cfg["gpuLeds"] else None
+        self.gpu_dev = gpu_device() if cfg["gpuLeds"] else None
         self.cpu = 0.0
         self.gpu = 0.0
         self.net = 0.0
 
     def tick(self, strip):
+        """Draw one frame; returns whether a memory warning is pulsing."""
         cfg = self.cfg
         now = time.monotonic()
         dt = max(1e-3, now - self.prev_t)
@@ -152,13 +188,19 @@ class Meter:
 
         a = cfg["smoothing"]
         self.cpu += (busy - self.cpu) * a
-        self.gpu += (gpu_busy(self.gpu_path) - self.gpu) * a
+        gpu_busy, vram = gpu_stats(self.gpu_dev)
+        self.gpu += (gpu_busy - self.gpu) * a
         self.net += (net_level - self.net) * a
-        draw_bar(strip, cfg["cpuLeds"], self.cpu, cpu_colour)
+
+        phase = (now * 1000.0 / cfg["pulsePeriodMs"]) % 1.0
+        ram_warn = warning(ram_used(), cfg, phase)
+        vram_warn = warning(vram, cfg, phase) if self.gpu_dev else None
+        draw_bar(strip, cfg["cpuLeds"], self.cpu, cpu_colour, ram_warn)
         gpu_rgb = tuple(cfg["gpuColor"])
-        draw_bar(strip, cfg["gpuLeds"], self.gpu, lambda _pos: gpu_rgb)
+        draw_bar(strip, cfg["gpuLeds"], self.gpu, lambda _pos: gpu_rgb, vram_warn)
         net_rgb = tuple(cfg["netColor"])
         draw_bar(strip, cfg["netLeds"], self.net, lambda _pos: net_rgb)
+        return ram_warn is not None or vram_warn is not None
 
 
 def build_uids():
@@ -233,8 +275,10 @@ def main():
                 strip.effect("off")
 
         if mode == "meter":
-            meter.tick(strip)
-            time.sleep(CFG["meter"]["intervalMs"] / 1000.0)
+            pulsing = meter.tick(strip)
+            # Faster frames while pulsing, so the pulse is smooth rather than 4 steps a second.
+            interval = CFG["meter"]["intervalMs"] / 1000.0
+            time.sleep(min(interval, 0.05) if pulsing else interval)
         elif mode == "build":
             busy = building(uids)
             if busy != was_building:

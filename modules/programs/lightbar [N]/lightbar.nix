@@ -124,7 +124,7 @@
           ];
           default = "meter";
           description = ''
-            meter: CPU, GPU and network bar graphs. build: breathe build.color while Nix builds run,
+            meter: CPU, GPU and network bar graphs (CPU/GPU pulse on high RAM/VRAM use). build: breathe build.color while Nix builds run,
             fixed look otherwise. fixed: the fixed.* look. off: strip dark.
           '';
         };
@@ -179,6 +179,24 @@
               200
               255
             ];
+          };
+          memWarnPercent = mkOption {
+            type = types.ints.between 1 100;
+            default = 85;
+            description = ''
+              RAM (CPU bar) or VRAM (GPU bar) use at which that whole bar starts pulsing in
+              brightness.
+            '';
+          };
+          memAlarmPercent = mkOption {
+            type = types.ints.between 1 100;
+            default = 95;
+            description = "Use at which the pulse cross-fades between the bar colours and red.";
+          };
+          pulsePeriodMs = mkOption {
+            type = types.ints.between 200 10000;
+            default = 1500;
+            description = "Length of one warning pulse.";
           };
           brightness = mkOption {
             type = types.ints.between 0 255;

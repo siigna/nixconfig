@@ -93,7 +93,8 @@ power cut is a BIOS setting, not something NixOS controls.
 **Light bar.** Driven by the `lightbar` module (`steammachine.lightbar.mode`: `meter` default,
 `build`, `fixed`, `off`; `sudo lightbar mode <m>` overrides until reboot, `lightbar reset`). Meter
 bars: CPU on LEDs 0–5, GPU (amdgpu `gpu_busy_percent`, first card exposing it) 6–11, network
-12–16. One root daemon (`lightbar.py`) writes only changed LEDs and restores the shipped breathing blue on stop.
+12–16. RAM (`MemAvailable`) / VRAM (`mem_info_vram_used`) use ≥ `memWarnPercent` (85) pulses the
+whole CPU / GPU bar; ≥ `memAlarmPercent` (95) the pulse cross-fades to red. One root daemon (`lightbar.py`) writes only changed LEDs and restores the shipped breathing blue on stop.
 Build mode keys off processes owned by `nixbld*` users; failures aren't visible on the builder side.
 Hardware details: Valve's `leds-valve` driver
 (`drivers/leds/rgb/leds-valve.c`, not in mainline; `LEDS_VALVE = module` in Jovian's kernel) loads on
