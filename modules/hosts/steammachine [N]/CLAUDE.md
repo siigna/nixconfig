@@ -71,7 +71,11 @@ by hand once, via desktop-mode Steam's "Add a Non-Steam Game".
 
 **Builder.** `builder-service` accepts nixdeck's root key (`/root/.ssh/nixbuilder-key`, named for
 the retired Proxmox VM) as both `nix-ssh` and `root`, via `builder.authorizedKeys`.
-`nix.daemonCPUSchedPolicy`/`IOSchedClass` are `idle` so builds yield to games.
+`nix.daemonCPUSchedPolicy`/`IOSchedClass` are `idle` so builds yield to games. That yields CPU, not
+memory, so `cores = 4`, `max-jobs = 3`: at the defaults bambu-studio or a kernel build filled 16 GB
+and earlyoom killed compilers and part of the deck session. siigna@nixdeck's key is also on
+`nix-ssh` (not root) for `make build`'s `--build-host`; `nix-ssh`'s home is `/var/lib/nix-ssh`
+because that build leaves its `result` link in the remote cwd.
 
 **Networking.** Wi-Fi only in normal use. The NetworkManager profile (with PSK) was copied from
 nixdeck at install time into `/etc/NetworkManager/system-connections/`; it is deliberately not in

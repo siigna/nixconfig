@@ -159,6 +159,13 @@ in
       # Remote builds must not stutter a game on the TV.
       nix.daemonCPUSchedPolicy = "idle";
       nix.daemonIOSchedClass = "idle";
+      # Idle priority yields CPU, not memory: at the defaults (all 12 threads, 12 jobs) one big C++
+      # build (bambu-studio, a kernel) filled 16 GB and earlyoom started killing, the deck
+      # session included. Cap it at 3 jobs x 4 cores.
+      nix.settings = {
+        cores = 4;
+        max-jobs = 3;
+      };
 
       environment.systemPackages = with pkgs; [
         git
