@@ -22,6 +22,9 @@ LEDS = ["/sys/class/leds/valve-leds[%d]" % i for i in range(NUM_LEDS)]
 STRIP = LEDS[0]  # strip-wide attributes are mirrored on every index
 OVERRIDE = "/run/lightbar/mode"
 MODES = ("meter", "build", "fixed", "off")
+# Reads come from the driver's cache, so if the EC loses the strip's state (seen 2026-10-25,
+# the meter went dark while sysfs still showed it) nothing looks changed. Rewrite it all this often.
+RESYNC_S = 30.0
 
 
 def write(path, value):
@@ -58,6 +61,12 @@ class Strip:
     def full_brightness(self):
         for path in LEDS:
             write(path + "/brightness", 255)
+
+
+def setup_meter(strip, cfg):
+    strip.effect("manual")
+    strip.strip_attr("brightness_scale", cfg["brightness"])
+    strip.full_brightness()
 
 
 def apply_fixed(strip, fixed):
@@ -257,6 +266,7 @@ def main():
     meter = None
     uids = build_uids()
     was_building = None
+    next_sync = 0.0
     while True:
         new_mode = current_mode()
         if new_mode != mode:
@@ -264,17 +274,19 @@ def main():
             print("mode: %s" % mode, flush=True)
             was_building = None
             if mode == "meter":
-                strip.effect("manual")
-                strip.strip_attr("brightness_scale", CFG["meter"]["brightness"])
-                strip.full_brightness()
+                setup_meter(strip, CFG["meter"])
                 strip.all((0, 0, 0))
                 meter = Meter(CFG["meter"])
+                next_sync = time.monotonic() + RESYNC_S
             elif mode == "fixed":
                 apply_fixed(strip, CFG["fixed"])
             elif mode == "off":
                 strip.effect("off")
 
         if mode == "meter":
+            if time.monotonic() >= next_sync:
+                setup_meter(strip, CFG["meter"])  # also empties the cache: tick rewrites every LED
+                next_sync = time.monotonic() + RESYNC_S
             pulsing = meter.tick(strip)
             # Faster frames while pulsing, so the pulse is smooth rather than 4 steps a second.
             interval = CFG["meter"]["intervalMs"] / 1000.0

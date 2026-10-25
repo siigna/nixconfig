@@ -102,6 +102,10 @@ power cut is a BIOS setting, not something NixOS controls.
 bars: CPU on LEDs 0–5, GPU (amdgpu `gpu_busy_percent`, first card exposing it) 6–11, network
 12–16. RAM (`MemAvailable`) / VRAM (`mem_info_vram_used`) use ≥ `memWarnPercent` (85) pulses the
 whole CPU / GPU bar; ≥ `memAlarmPercent` (95) the pulse cross-fades to red. One root daemon (`lightbar.py`) writes only changed LEDs and restores the shipped breathing blue on stop.
+In meter mode it also rewrites the whole strip (effect, brightness, every LED) every 30 s (`RESYNC_S`):
+sysfs reads come from the driver's cache, and on 2026-10-25 the strip went dark while sysfs still
+showed the meter, so the change-only writes never repainted it. Cause unknown (the Steam Controller
+firmware update was in progress at the time).
 Build mode keys off processes owned by `nixbld*` users; failures aren't visible on the builder side.
 Hardware details: Valve's `leds-valve` driver
 (`drivers/leds/rgb/leds-valve.c`, not in mainline; `LEDS_VALVE = module` in Jovian's kernel) loads on
