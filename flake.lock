@@ -282,6 +282,24 @@
         "type": "github"
       }
     },
+    "jovian-nixos-fremont": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792847143,
+        "narHash": "sha256-aTNU38iqoP21bx7PhkJhdtVeKOlXQRmxXZC66opeU4w=",
+        "ref": "refs/pull/598/merge",
+        "rev": "024486d79e20fa8f743f7191229cd444185dd276",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/Jovian-Experiments/Jovian-NixOS"
+      },
+      "original": {
+        "ref": "refs/pull/598/merge",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/Jovian-Experiments/Jovian-NixOS"
+      }
+    },
     "nix-index-database": {
       "inputs": {
         "nixpkgs": [
@@ -590,6 +608,7 @@
         "home-manager": "home-manager",
         "import-tree": "import-tree",
         "jovian-nixos": "jovian-nixos",
+        "jovian-nixos-fremont": "jovian-nixos-fremont",
         "nix-index-database": "nix-index-database",
         "nix-tracking": "nix-tracking",
         "nixos-config-tui": "nixos-config-tui",

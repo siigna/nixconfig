@@ -17,6 +17,14 @@
       url = "github:Jovian-Experiments/Jovian-NixOS";
     };
 
+    # steammachine only: Jovian PR #598 (K900's jovian.devices.steammachine), as GitHub's
+    # test-merge onto current master so it doesn't lag the master pin above. Drop this input
+    # and go back to `jovian` once #598 lands.
+    jovian-nixos-fremont = {
+      flake = false;
+      url = "git+https://github.com/Jovian-Experiments/Jovian-NixOS?ref=refs/pull/598/merge&shallow=1";
+    };
+
     # Custom overlay packages (adi1090x-plymouth, etc.)
     packages = {
       flake = false;

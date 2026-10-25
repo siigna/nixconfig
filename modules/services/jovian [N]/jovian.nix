@@ -1,9 +1,12 @@
 { inputs, ... }:
-{
-  flake.modules.nixos.jovian =
+let
+  # Same module over different Jovian trees: `jovian` tracks master, `jovian-fremont` the
+  # steammachine PR (flake input jovian-nixos-fremont). A host imports exactly one of them.
+  mkJovian =
+    src:
     { pkgs, ... }:
     {
-      imports = [ (inputs.jovian-nixos + "/modules") ];
+      imports = [ (src + "/modules") ];
 
       jovian.steam.enable = true;
       jovian.decky-loader.enable = true;
@@ -66,4 +69,8 @@
         ];
       };
     };
+in
+{
+  flake.modules.nixos.jovian = mkJovian inputs.jovian-nixos;
+  flake.modules.nixos.jovian-fremont = mkJovian inputs.jovian-nixos-fremont;
 }

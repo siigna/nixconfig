@@ -1,5 +1,10 @@
 # jovian.nix notes
 
+`jovian.nix` builds one module per Jovian tree via `mkJovian src`: `jovian` over input
+`jovian-nixos` (master, nixdeck) and `jovian-fremont` over `jovian-nixos-fremont` (GitHub's
+`refs/pull/598/merge` for Jovian PR #598, steammachine). A host imports exactly one; importing both
+declares every Jovian option twice. `make update` moves the PR input to the latest test-merge too.
+
 Split in two modules. `jovian` (shared) holds Steam, Decky, the `deck` user and the watchdog.
 `jovian-steamdeck` (nixdeck only) holds Deck hardware (`jovian.devices.steamdeck`, dock/BIOS
 updaters, `jupiter-fan-control` mask) and the GDM flow (`deckGdmSession` pin, `nopasswdlogin`, and the

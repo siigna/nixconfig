@@ -11,7 +11,7 @@ in
         nixos-common
         hardware-steammachine
         hosts-file
-        jovian
+        jovian-fremont
         tailscale
         builder-service
         siigna
@@ -77,9 +77,9 @@ in
         })
       ];
 
-      # Jovian has no jovian.devices.steammachine yet (PR Jovian-Experiments/Jovian-NixOS#584).
-      # Until it lands, declare the GPU ourselves.
-      jovian.hardware.has.amd.gpu = true;
+      # From Jovian PR #598 (jovian-fremont): AMD GPU, Valve kernel + Mesa, fan control, DSP,
+      # linux-firmware-holo, fwupd BIOS remote, and LED attrs group-writable for `users`.
+      jovian.devices.steammachine.enable = true;
 
       # HDMI-CEC (TV remote) goes through the ChromeOS-style EC, not the GPU. Valve's kernel
       # knows the board ({ "Valve", "Fremont", "0000:03:00.0", "Port C" } in cros-ec-cec.c;
@@ -87,7 +87,7 @@ in
       # The patch makes cec-notifier pair amdgpu's unnamed connector with the EC's "Port C"
       # lookup whichever registers first; otherwise CEC silently fails when amdgpu wins.
       # Jovian's cecd (jovian.steamos.enableHdmiCecIntegration) picks up /dev/cec0.
-      boot.kernelPackages = pkgs.jovianPackages.linuxPackages;
+      # (The Jovian kernel itself comes from jovian.devices.steammachine.)
       boot.kernelPatches = [
         {
           name = "fremont-cros-ec-cec";

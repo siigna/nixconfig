@@ -58,7 +58,7 @@ The `flake.modules.nixos` option is enabled by `inputs.flake-parts.flakeModules.
 
 **`modules/hosts/steammachine [N]/`** (Steam Machine):
 - `flake-parts.nix` — `mkNixos "x86_64-linux" "steammachine"`
-- `configuration.nix` — imports `nixos-common`, `jovian` (autostart via SDDM, Plasma desktop mode), `builder-service`, `tailscale`, `siigna`, `hosts-file`, `tv-apps`, `atop`, `lightbar`
+- `configuration.nix` — imports `nixos-common`, `jovian-fremont` (autostart via SDDM, Plasma desktop mode), `builder-service`, `tailscale`, `siigna`, `hosts-file`, `tv-apps`, `atop`, `lightbar`
 - `hardware.nix` — registers `flake.modules.nixos.hardware-steammachine` (label-based root/ESP, zram)
 
 Each host sets its own `networking.hostName` and `system.stateVersion`.
@@ -76,7 +76,8 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `nixos-common` | `system/common [N]/common.nix` — overlays, bootloader, Plymouth, NetworkManager, nix settings (nixdeck + steammachine) |
 | `nixos-base` | `system/base [N]/base.nix` — imports `nixos-common`; GNOME, GDM monitors, printing, firewall, home-manager (nixdeck) |
 | `system-packages` | `programs/packages [N]/system-packages.nix` — all system packages, Steam, Docker, VSCode |
-| `jovian` | `services/jovian [N]/jovian.nix` — Jovian modules, Steam, Decky, `deck` user (shared) |
+| `jovian` | `services/jovian [N]/jovian.nix` — Jovian modules (master), Steam, Decky, `deck` user (nixdeck) |
+| `jovian-fremont` | `services/jovian [N]/jovian.nix` — same module over input `jovian-nixos-fremont` (Jovian PR #598 test-merge) (steammachine) |
 | `jovian-steamdeck` | `services/jovian [N]/jovian-steamdeck.nix` — Deck hardware + GDM session flow + `steamos-session-select` stub (nixdeck) |
 | `tv-apps` | `programs/tv-apps [N]/tv-apps.nix` — Plex HTPC + Chrome kiosk launchers for YouTube TV, Netflix, Prime Video (steammachine) |
 | `atop` | `programs/atop [N]/atop.nix` — atop datalogging (60 s) + process accounting; hourly `atopsar` text reports served on :8088, tailnet-only (steammachine) |
@@ -106,12 +107,12 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 Gotchas and design notes live in a `CLAUDE.md` next to the module they describe, loaded on demand
 when a file in that directory is read. Read the one for the module before changing it:
 
-- `services/jovian [N]/` — `jovian` vs `jovian-steamdeck` split, nixdeck's `steamos-session-select` stub, launch watchdog (`Type=simple`), `decky` user
+- `services/jovian [N]/` — `jovian` vs `jovian-steamdeck` split, `jovian-fremont`, nixdeck's `steamos-session-select` stub, launch watchdog (`Type=simple`), `decky` user
 - `programs/breezy [N]/` — xrlinuxdriver patches, Decky XRGaming shim, vkBasalt, IPC cleanup, session lifecycle (deeper detail in `xr_driver_notes.md`)
 - `programs/xreal-one [N]/`, `programs/obdium [N]/`, `services/steam-library [N]/`
 - `services/gdm-nopasswdlogin [N]/` — PAM rule must use `.rules`, not `.text`, or every GDM login fails
 - `system/nix-build-scratch [N]/` — why `/var/nix-build` is an ext4 image on the NTFS volume
-- `hosts/steammachine [N]/` — no Jovian device module yet (PR #584), SDDM/Plasma session switching, HDMI-CEC, deploy, PXE reinstall recipe
+- `hosts/steammachine [N]/` — Jovian device module from unmerged PR #598 (`jovian-fremont`), SDDM/Plasma session switching, HDMI-CEC, deploy, PXE reinstall recipe
 - `programs/claude-code [N]/` — managed settings, plugin marketplace, Dippy wrapper
 - `packages/fargo-dtc4250e-driver/` — the `requireFile` src and how to satisfy it
 
