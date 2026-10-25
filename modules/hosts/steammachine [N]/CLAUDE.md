@@ -12,8 +12,9 @@ test-merge onto master so it doesn't lag nixdeck's pin; first locked 2026-10-25 
 master `37f5cfb` + PR head `2b2239e`). The host sets `jovian.devices.steammachine.enable`, which turns
 on `jovian.hardware.valve` (Jovian kernel, Valve Mesa `mesa-radeonsi-jupiter`, fan control,
 `steamdeck-dsp`), `linux-firmware-holo`, the fwupd `fremont-hw-support` BIOS remote (no auto-update),
-and `enableLightbarControl` (tmpfiles makes `/sys/class/leds/*/<attr>` `0660 root:users` at boot —
-the root `lightbar` daemon doesn't care, but Steam's own LED setting could now fight it). Chosen over
+and `enableLightbarControl`, which the host turns **off**: it makes `/sys/class/leds/*/<attr>`
+`0660 root:users` via tmpfiles, and with that Steam's own light bar setting fought the `lightbar`
+daemon (seen 2026-10-25). Root-only, the daemon wins and Steam's LED setting does nothing. Chosen over
 duckysocks22's #584, which on its 2026-10-18 rebase drops `./cec.nix` from `modules/steamos` (no
 `enableHdmiCecIntegration`, no cecd) and uses `pkgs.linuxPackages_jovian`, gone since the scope
 change. If the merge ref stops resolving (PR closed/conflicting), `make update` fails on it: pin a

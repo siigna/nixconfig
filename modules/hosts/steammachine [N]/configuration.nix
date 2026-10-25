@@ -78,8 +78,11 @@ in
       ];
 
       # From Jovian PR #598 (jovian-fremont): AMD GPU, Valve kernel + Mesa, fan control, DSP,
-      # linux-firmware-holo, fwupd BIOS remote, and LED attrs group-writable for `users`.
+      # linux-firmware-holo and the fwupd BIOS remote.
       jovian.devices.steammachine.enable = true;
+      # Keep the LED attrs root-only: the `lightbar` daemon owns the strip, and with them
+      # group-writable for `users` Steam's own light bar setting fought it.
+      jovian.devices.steammachine.enableLightbarControl = false;
 
       # HDMI-CEC (TV remote) goes through the ChromeOS-style EC, not the GPU. Valve's kernel
       # knows the board ({ "Valve", "Fremont", "0000:03:00.0", "Port C" } in cros-ec-cec.c;
