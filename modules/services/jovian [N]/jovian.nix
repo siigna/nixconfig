@@ -60,8 +60,9 @@ let
         };
       };
 
+      # No declared password: the repo is public. mutableUsers keeps whatever `passwd deck` set;
+      # a fresh install leaves deck without one (autologin doesn't need it) until it's set by hand.
       users.users.deck = {
-        hashedPassword = "REDACTED";
         isNormalUser = true;
         shell = pkgs.bash;
         extraGroups = [

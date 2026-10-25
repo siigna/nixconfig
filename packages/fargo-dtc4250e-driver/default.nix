@@ -36,6 +36,22 @@ stdenv.mkDerivation {
     '';
   };
 
+  # The HID ICC profile and raw test jobs come from HID's Windows driver, under the same
+  # terms, so they're kept out of the repo too: a directory added by hand (recursive hash).
+  extras = requireFile {
+    name = "fargo-dtc4250e-extras";
+    hashMode = "recursive";
+    hash = "sha256-/zlfYHDrV9G/1aKwzG1IpJ2QmEo2we0Iwc3huscn7S0=";
+    url = "https://www.hidglobal.com/drivers";
+    message = ''
+      The DTC4250e extras (CLR_HID_D001.icm and the *_Tst.prn test jobs from HID's
+      Windows driver) are not redistributable. Put them in a directory named
+      fargo-dtc4250e-extras, then add it to the store:
+
+        nix-store --add-fixed --recursive sha256 fargo-dtc4250e-extras
+    '';
+  };
+
   nativeBuildInputs = [ patchelf ];
   buildInputs = [ cups ];
 
@@ -78,11 +94,11 @@ stdenv.mkDerivation {
       $out/share/cups/profiles/dtc4250eCLR_L.icm
 
     # Additional ICC profile from Windows driver (newer, HID-specific gamut)
-    install -Dm644 ${./extras/CLR_HID_D001.icm} \
+    install -Dm644 $extras/CLR_HID_D001.icm \
       $out/share/cups/profiles/dtc4250eCLR_HID_D001.icm
 
     # Raw test print jobs from Windows driver — send via: nc 172.31.5.2 9100 < file.prn
-    for prn in ${./extras}/*.prn; do
+    for prn in $extras/*.prn; do
       install -Dm644 "$prn" "$out/share/fargo/DTC4250e/test/$(basename $prn)"
     done
 

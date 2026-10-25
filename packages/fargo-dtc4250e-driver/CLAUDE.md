@@ -23,3 +23,10 @@ nix-store --realise /nix/store/…-DTC4250e-1.0.0.4-x64.tar.gz \
 
 `make build` realises on steammachine (`BUILDHOST`), and `--build-host` copies only derivations,
 so the build host needs its own copy: `nix copy --to ssh-ng://nix-ssh@steammachine /nix/store/…`.
+
+The ICC profile and `.prn` test jobs (from HID's Windows driver) are a second `requireFile`,
+`fargo-dtc4250e-extras`, a directory with a recursive hash; they were in the repo until it went
+public. nixdeck keeps a copy in `~/.local/share/fargo-dtc4250e-extras` (rooted at
+`~/.local/state/nix-roots/fargo-dtc4250e-extras`); add it with
+`nix-store --add-fixed --recursive sha256 ~/.local/share/fargo-dtc4250e-extras`, and copy it to
+the build host the same way as the tarball.
