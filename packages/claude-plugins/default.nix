@@ -15,6 +15,8 @@
 #                   Docker image).
 #   skill-codex     Lets Claude delegate prompts to the Codex CLI.
 #   agnix           /agnix command + skill wrapping the agnix linter.
+#   good-readme     README create/audit skill (text only). Like terraform-skill,
+#                   non-strict with just the skill directory copied.
 #   trailofbits/*   Selected security-review plugins (tobPlugins below); none
 #                   of them install hooks.
 {
@@ -45,6 +47,13 @@ let
     repo = "skill-codex";
     rev = "0cf3e4b6e801cae209fc27a50440b453b44af910";
     hash = "sha256-+rsVc5J1JBsknIPB83zHNNTjFEycZPytWH5p4cd4g80=";
+  };
+
+  goodReadme = fetchFromGitHub {
+    owner = "adewale";
+    repo = "good-readme";
+    rev = "5ac91dca6054352a590406e6a12703ee1b4cfd09";
+    hash = "sha256-RQtbc6B3x3lDGjmZsTz9P36iAkDK3ne5CTeWZJtzI5o=";
   };
 
   trailofbits = fetchFromGitHub {
@@ -92,6 +101,12 @@ let
       })
       (plugin "skill-codex" { })
       (plugin "agnix" { })
+      (plugin "good-readme" {
+        description = "Create, audit and improve GitHub README documents";
+        # Keep in step with metadata.version in upstream's SKILL.md when bumping rev.
+        version = "0.1.1";
+        strict = false;
+      })
     ]
     ++ map (n: plugin n { }) tobPlugins;
   };
@@ -118,6 +133,9 @@ runCommand "claude-plugins"
 
     cp -r ${skillCodex}/plugins/skill-codex $out/plugins/skill-codex
     cp -r ${agnix.src}/plugin $out/plugins/agnix
+
+    mkdir -p $out/plugins/good-readme
+    cp -r ${goodReadme}/skills $out/plugins/good-readme/
 
     ${lib.concatMapStrings (n: ''
       cp -r ${trailofbits}/plugins/${n} $out/plugins/${n}
