@@ -70,6 +70,7 @@
         neovim
         jovianPackages.galileo-mura
         blackbox-terminal
+        ghostty
         zoom-us
         linux-wifi-hotspot
         ocrmypdf
