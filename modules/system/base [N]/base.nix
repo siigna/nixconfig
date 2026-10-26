@@ -184,6 +184,9 @@
             "\${HOME}/.local/share/flatpak/exports/share"
           ];
           EDITOR = "vim";
+          # Hermes: full-screen Ink TUI instead of the inline prompt_toolkit REPL
+          # (the REPL streams into scrollback and jitters under VTE).
+          HERMES_TUI = "1";
         };
 
         home-manager.useUserPackages = true;
