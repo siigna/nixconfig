@@ -1,9 +1,5 @@
 # ESCargot Tool — our VESC Tool fork, as the AppImage from releases.escargot.free.
-#
-# The release server has no "latest" alias (only the Edge/Stable list on its
-# index page), so this pins one release. To bump: take the newest Edge release
-# from https://releases.escargot.free/, set `release`, and copy the AppImage's
-# line from that release's SHA256SUMS into `sha256`.
+# The release is pinned in release.nix, shared with escargot-tool-wine.
 #
 # Installed as escargot-tool so it can sit beside nixpkgs' vesc_tool.
 {
@@ -12,15 +8,13 @@
   fetchurl,
 }:
 let
-  release = "escargot.20261031.61099a3f.48e98a";
-  # The AppImage name drops the release's trailing build suffix.
-  stem = lib.concatStringsSep "." (lib.take 3 (lib.splitString "." release));
+  pin = import ./release.nix { inherit lib; };
   pname = "escargot-tool";
-  version = lib.removePrefix "escargot." stem;
+  inherit (pin) version;
 
   src = fetchurl {
-    url = "https://releases.escargot.free/v/${release}/linux/vesc_tool-${stem}-x86_64.AppImage";
-    sha256 = "a5bf0ea5297722482ac049a31dbf1f9d5e2245e00d46529a0bfee4815656b884";
+    url = "${pin.baseUrl}/linux/vesc_tool-${pin.stem}-x86_64.AppImage";
+    sha256 = pin.sha256.appimage;
   };
 
   contents = appimageTools.extract { inherit pname version src; };

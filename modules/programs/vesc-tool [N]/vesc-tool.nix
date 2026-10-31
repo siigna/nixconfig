@@ -12,6 +12,8 @@
         pkgs.vesc-tool
         # ESCargot fork, pinned AppImage (packages/escargot-tool); runs as escargot-tool.
         pkgs.escargot-tool
+        # Same release's Windows .exe under Wine (packages/escargot-tool/wine.nix).
+        pkgs.escargot-tool-wine
       ];
 
       # VESCs appear as USB CDC-ACM serial devices (/dev/ttyACM*). dialout owns

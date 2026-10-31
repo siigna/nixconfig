@@ -10,6 +10,7 @@ self: super: {
   agnix = super.callPackage ./agnix { };
   empryo = super.callPackage ./empryo { };
   escargot-tool = super.callPackage ./escargot-tool { };
+  escargot-tool-wine = self.callPackage ./escargot-tool/wine.nix { };
   claude-plugins = self.callPackage ./claude-plugins { };
   # Downgrade alsa-ucm-conf to 1.2.8
   # https://github.com/Jovian-Experiments/Jovian-NixOS/issues/88
