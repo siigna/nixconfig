@@ -92,7 +92,7 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `builder-service` | `services/builder-service [N]/builder-service.nix` — nix-ssh user + SSH daemon + `builder.authorizedKeys` for accepting remote builds (steammachine) |
 | `intellij` | `programs/intellij [N]/intellij.nix` — IntelliJ IDEA |
 | `radio` | `programs/radio [N]/radio.nix` — SDR / radio tools |
-| `vesc-tool` | `programs/vesc-tool [N]/vesc-tool.nix` — VESC motor-controller IDE; adds siigna to `dialout` for `/dev/ttyACM*` |
+| `vesc-tool` | `programs/vesc-tool [N]/vesc-tool.nix` — VESC motor-controller IDE + ESCargot fork AppImage; adds siigna to `dialout` for `/dev/ttyACM*` |
 | `fonts` | `programs/fonts [N]/fonts.nix` — comic-relief, font-awesome |
 | `hosts-file` | `services/hosts-file [N]/hosts-file.nix` — static `networking.extraHosts` for LAN boxes (proxmox, nixmox, octopi) |
 | `gdm-nopasswdlogin` | `services/gdm-nopasswdlogin [N]/gdm-nopasswdlogin.nix` — `nopasswdlogin` group + GDM PAM rule |
@@ -140,6 +140,7 @@ uv2nix build, with `nixpkgs` followed).
 | `agnix` | `packages/agnix/` | Linter for CLAUDE.md, skills, hooks, plugin and MCP config |
 | `claude-plugins` | `packages/claude-plugins/` | Local plugin marketplace built from pinned upstream repos |
 | `empryo` | `packages/empryo/` | Empryo (ex-SoulForge) AI coding agent; prebuilt unfree Bun binary, `deps/` kept beside it in `libexec` |
+| `escargot-tool` | `packages/escargot-tool/` | ESCargot VESC Tool fork; pinned AppImage from releases.escargot.free (no "latest" alias — bump `release` + `sha256` by hand), installed by `vesc-tool` as `escargot-tool` |
 
 **Dual-nixpkgs strategy**: packages requiring `webkitgtk_4_0` (obdium, and breezy-gnome's build dependencies) accept a `pkgs-webkitgtk40` argument wired to the pinned nixpkgs. The overlay's `default.nix` passes it through so these packages build without polluting the main nixpkgs set.
 

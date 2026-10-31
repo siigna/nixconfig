@@ -8,7 +8,11 @@
       #
       # The overlay also exposes tier builds (vesc-tool-free/bronze/silver/
       # gold/platinum) and bldc-fw. We install the plain "original" build.
-      environment.systemPackages = [ pkgs.vesc-tool ];
+      environment.systemPackages = [
+        pkgs.vesc-tool
+        # ESCargot fork, pinned AppImage (packages/escargot-tool); runs as escargot-tool.
+        pkgs.escargot-tool
+      ];
 
       # VESCs appear as USB CDC-ACM serial devices (/dev/ttyACM*). dialout owns
       # those nodes, so non-root access needs group membership. Already granted
