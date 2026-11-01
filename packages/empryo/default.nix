@@ -24,12 +24,12 @@
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "empryo";
-  version = "3.11.0-beta";
+  version = "3.12.2-beta";
 
   # The standard x64 build needs AVX2/FMA/BMI2; the Deck's Zen 2 has them.
   src = fetchurl {
     url = "https://dl.empryo.com/v${finalAttrs.version}/empryo-${finalAttrs.version}-linux-x64.tar.gz";
-    hash = "sha256-uceYlQ+Pj14VF/8eDeT2TVoU58Cq4qxnjN03fkdX1N4=";
+    hash = "sha256-9D0g5PrDDBzEACmbyaBQAtqtcDwTcp0RgFh8Svv0Oqg=";
   };
 
   nativeBuildInputs = [
