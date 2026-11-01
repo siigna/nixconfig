@@ -170,6 +170,16 @@ in
         max-jobs = 3;
       };
 
+      # ESCargot's Android emulator tests pass a USB device straight into the emulator
+      # (QEMU usb-host) to test the app's wired link, which needs the raw /dev/bus/usb
+      # node, not the /dev/ttyACM* dialout already covers. Group, not uaccess: the seat
+      # user is `deck`, and the tests run as siigna over ssh. VESC Express (ESP32 USB
+      # serial) and STM32 VESCs.
+      services.udev.extraRules = ''
+        SUBSYSTEM=="usb", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="1001", MODE="0660", GROUP="dialout"
+        SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5740", MODE="0660", GROUP="dialout"
+      '';
+
       environment.systemPackages = with pkgs; [
         git
         htop
