@@ -80,7 +80,15 @@ by hand once, via desktop-mode Steam's "Add a Non-Steam Game".
 the retired Proxmox VM) as both `nix-ssh` and `root`, via `builder.authorizedKeys`.
 `nix.daemonCPUSchedPolicy`/`IOSchedClass` are `idle` so builds yield to games. That yields CPU, not
 memory, so `cores = 4`, `max-jobs = 3`: at the defaults bambu-studio or a kernel build filled 16 GB
-and earlyoom killed compilers and part of the deck session. siigna@nixdeck's key is also on
+and earlyoom killed compilers and part of the deck session. Even capped, bambu-studio under gcc 16
+(2026-11-04) ran it out, and earlyoom took PipeWire, Steam and gamescope before cc1plus, because
+user processes run at `oom_score_adj` 200 and builds inherited nix-daemon's 0. `nix-daemon` now has
+`OOMScoreAdjust = 500`, so builds (and the daemon's per-client workers) are the first victims.
+Hand-added or slow-to-rebuild store paths the Deck's builds need are pinned under
+`/nix/var/nix/gcroots/manual/` (Fargo driver tarball + extras, obdium's webkitgtk 4.0), since the
+nightly GC otherwise deletes them and cache.nixos.org can't substitute them. Copy a path from the
+Deck with `sudo NIX_SSHOPTS="-i /root/.ssh/nixbuilder-key" nix copy --no-check-sigs --to
+ssh-ng://root@steammachine <path>`; as `nix-ssh` the copy is refused for lacking a trusted signature. siigna@nixdeck's key is also on
 `nix-ssh` (not root) for `make build`'s `--build-host`; `nix-ssh`'s home is `/var/lib/nix-ssh`
 because that build leaves its `result` link in the remote cwd.
 

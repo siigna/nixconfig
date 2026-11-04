@@ -169,6 +169,11 @@ in
         cores = 4;
         max-jobs = 3;
       };
+      # The cap still isn't enough for bambu-studio under gcc 16 (2026-11-04), and earlyoom
+      # then picked the session: user processes run at oom_score_adj 200, builds inherited
+      # nix-daemon's 0, so PipeWire, Steam and gamescope died before cc1plus did. Builds
+      # (and the daemon) go first instead; a killed build just fails and can be retried.
+      systemd.services.nix-daemon.serviceConfig.OOMScoreAdjust = 500;
 
       # ESCargot's Android emulator tests pass a USB device straight into the emulator
       # (QEMU usb-host) to test the app's wired link, which needs the raw /dev/bus/usb
