@@ -57,9 +57,12 @@
           # patchelf 0.19.2 aborts on semgrep-core's prebuilt binary (tracking:
           # NixOS/nixpkgs#577387). Fix it up with 0.15.2, as upstream does for rgp; drop once
           # nixos-unstable has a fixed patchelf.
+          # semgrep 1.180.0 imports mcp.server.fastmcp, which mcp 2.x renamed, so it needs mcp 1.x.
+          # NixOS/nixpkgs#580821 fixes both; drop this override once that lands.
           (final: prev: {
             semgrep = final.python3.pkgs.toPythonApplication (
               final.python3.pkgs.semgrep.override {
+                mcp = final.python3.pkgs.mcp_1;
                 semgrep-core = final.python3.pkgs.semgrep.semgrep-core.override {
                   patchelf = prev.patchelf.overrideAttrs (
                     finalAttrs: _: {
@@ -92,7 +95,7 @@
         ];
 
         boot = {
-          initrd.systemd.enable = true;
+          # systemd initrd is the only kind since nixpkgs dropped the scripted one (2026-11).
           kernelParams = [
             "quiet"
             "splash"
