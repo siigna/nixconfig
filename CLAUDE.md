@@ -94,7 +94,7 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `radio` | `programs/radio [N]/radio.nix` — SDR / radio tools |
 | `vesc-tool` | `programs/vesc-tool [N]/vesc-tool.nix` — VESC motor-controller IDE + ESCargot fork (AppImage and Windows build under Wine); adds siigna to `dialout` for `/dev/ttyACM*` |
 | `fonts` | `programs/fonts [N]/fonts.nix` — comic-relief, font-awesome |
-| `hosts-file` | `services/hosts-file [N]/hosts-file.nix` — static `networking.extraHosts` for LAN boxes (proxmox, nixmox, octopi) |
+| `hosts-file` | `services/hosts-file [N]/hosts-file.nix` — static `networking.extraHosts` for LAN boxes (proxmox, nixmox, octopi, homeassistant) |
 | `gdm-nopasswdlogin` | `services/gdm-nopasswdlogin [N]/gdm-nopasswdlogin.nix` — `nopasswdlogin` group + GDM PAM rule |
 | `bootnext` | `services/bootnext [N]/bootnext.nix` — oneshot setting UEFI BootNext back to the current entry (SteamOS) |
 | `nix-build-scratch` | `system/nix-build-scratch [N]/nix-build-scratch.nix` — build sandbox scratch on an ext4 image inside the NTFS volume |

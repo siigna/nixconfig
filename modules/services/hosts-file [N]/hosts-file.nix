@@ -5,6 +5,7 @@
       172.31.5.17 proxmox
       172.31.5.21 nixmox
       172.31.5.28 octopi
+      192.168.3.50 homeassistant.lan.threefifteen.info
     '';
   };
 }
