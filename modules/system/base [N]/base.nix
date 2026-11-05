@@ -47,7 +47,9 @@
           ];
           # Evidence.dev dev server
           # ESCargot Hub
-          allowedTCPPorts = [ 3000 4001 ];
+          # ESCargot test MQTT broker (Mosquitto), plain and TLS: the bench
+          # Express publishes to it while the Home Assistant packages are tested
+          allowedTCPPorts = [ 3000 4001 1883 8883 ];
         };
 
         services.logind.settings.Login = {
