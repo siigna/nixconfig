@@ -80,6 +80,16 @@ in
       # From Jovian PR #598 (jovian-fremont): AMD GPU, Valve kernel + Mesa, fan control, DSP,
       # linux-firmware-holo and the fwupd BIOS remote.
       jovian.devices.steammachine.enable = true;
+      # Jovian moved these two amdgpu tunings into the Deck profile (Jovian #602, cca80286),
+      # and #598 doesn't set them for fremont. Both are Valve's RDNA2/RDNA3 settings, and this
+      # is RDNA3 (Navi 33), so keep what the box has run with. dcdebugmask without the Deck's
+      # 0x40000 backlight-curve bit: there's no panel here.
+      boot.kernelParams = [
+        # 4 is the maximum Valve supports across RDNA2 + RDNA3; more hangs RDNA3 at startup
+        "amdgpu.sched_hw_submission=4"
+        # avoids black/white flashes when showing/hiding planes
+        "amdgpu.dcdebugmask=0x20000"
+      ];
       # Keep the LED attrs root-only: the `lightbar` daemon owns the strip, and with them
       # group-writable for `users` Steam's own light bar setting fought it.
       jovian.devices.steammachine.enableLightbarControl = false;

@@ -77,7 +77,7 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `nixos-base` | `system/base [N]/base.nix` — imports `nixos-common`; GNOME, GDM monitors, printing, firewall, home-manager (nixdeck) |
 | `system-packages` | `programs/packages [N]/system-packages.nix` — all system packages, Steam, Docker, VSCode |
 | `jovian` | `services/jovian [N]/jovian.nix` — Jovian modules (master), Steam, Decky, `deck` user (nixdeck) |
-| `jovian-fremont` | `services/jovian [N]/jovian.nix` — same module over input `jovian-nixos-fremont` (Jovian PR #598 test-merge) (steammachine) |
+| `jovian-fremont` | `services/jovian [N]/jovian.nix` — same module over input `jovian-nixos-fremont` (Jovian PR #598 rebased onto development in our fork) (steammachine) |
 | `jovian-steamdeck` | `services/jovian [N]/jovian-steamdeck.nix` — Deck hardware + GDM session flow + `steamos-session-select` stub (nixdeck) |
 | `tv-apps` | `programs/tv-apps [N]/tv-apps.nix` — Plex HTPC + Chrome kiosk launchers for YouTube TV, Netflix, Prime Video (steammachine) |
 | `atop` | `programs/atop [N]/atop.nix` — atop datalogging (60 s) + process accounting; hourly `atopsar` text reports served on :8088, tailnet-only (steammachine) |

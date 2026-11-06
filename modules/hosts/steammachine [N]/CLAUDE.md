@@ -7,9 +7,17 @@ Hardware as installed: AMD Custom CPU 1772 (12 threads), Navi 33 GPU, 16 GB RAM,
 NVMe (`nvme0n1`), Realtek RTL8111 ethernet (`enp5s0`), Qualcomm WCN6855 Wi-Fi (`wlp6s0`, ath11k).
 
 **Jovian device module from an unmerged PR.** steammachine imports `jovian-fremont`, i.e. Jovian
-over flake input `jovian-nixos-fremont` = `refs/pull/598/merge` (K900's #598, WIP, as GitHub's
-test-merge onto master so it doesn't lag nixdeck's pin; first locked 2026-10-25 at `024486d`, parents
-master `37f5cfb` + PR head `2b2239e`). The host sets `jovian.devices.steammachine.enable`, which turns
+over flake input `jovian-nixos-fremont`: K900's #598 (WIP). Until 2026-11-05 that was GitHub's
+`refs/pull/598/merge` test-merge; since Jovian's #602 fix (`cca80286`) edits
+`modules/devices/steamdeck/kernel.nix`, which #598 deletes, the PR conflicts and the ref stopped
+updating. So it's now branch `fremont-598-rebase` in our fork siigna/Jovian-NixOS: #598's three
+commits rebased onto `development` (`422ba2f`). The one conflict was resolved by keeping a
+Deck-only `steamdeck/kernel.nix` with just Jovian's Deck kernel params (`fbcon=rotate:1`,
+`sched_hw_submission=4`, `dcdebugmask=0x60000`), imported from `steamdeck/default.nix`; #598's
+generic `steamos/kernel.nix` keeps the vendor kernel and HID preload. Re-rebase when #598 or
+`development` moves (clone the fork, `git fetch upstream pull/598/head`, rebase, nixfmt, push).
+#602 also means fremont no longer gets `amdgpu.sched_hw_submission=4`/`dcdebugmask=0x20000`
+from Jovian, so the host sets both itself. The host sets `jovian.devices.steammachine.enable`, which turns
 on `jovian.hardware.valve` (Jovian kernel, Valve Mesa `mesa-radeonsi-jupiter`, fan control,
 `steamdeck-dsp`), `linux-firmware-holo`, the fwupd `fremont-hw-support` BIOS remote (no auto-update),
 and `enableLightbarControl`, which the host turns **off**: it makes `/sys/class/leds/*/<attr>`
