@@ -8,7 +8,10 @@ above `~/.claude/settings.json`: single keys set here (e.g. `statusLine`) win, w
 
 What it sets:
 
-- **statusLine** — `goccc -statusline`. Upstream goccc misprices OpenRouter transcripts
+- **statusLine** — `claude-statusline`, a wrapper printing the caveman plugin's mode badge (if the
+  plugin is installed; its script is found under `~/.claude/plugins/cache/caveman/caveman/*/hooks/`)
+  followed by `goccc -statusline`. Because the managed key wins, the `statusLine` the caveman plugin
+  suggests for `~/.claude/settings.json` would be ignored; extend this wrapper instead. Upstream goccc misprices OpenRouter transcripts
   (`anthropic/claude-opus-5.5`), hence `packages/goccc/openrouter-model-ids.patch`. Layout is
   configurable in `~/.goccc.json`.
 - **PreToolUse hook (Bash)** — Dippy, wrapped so its `ask` verdicts are dropped. A hook answering

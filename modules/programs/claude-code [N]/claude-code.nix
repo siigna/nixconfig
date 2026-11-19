@@ -22,6 +22,35 @@
         '';
       };
 
+      # statusLine is a single managed key, so a user-level statusLine (such as
+      # the one the caveman plugin asks for) never takes effect. Compose both
+      # here instead. caveman is a user-installed plugin whose cache directory
+      # is keyed by a commit hash, so its badge script is located at runtime
+      # (newest copy wins); without it this is plain goccc. goccc reads the
+      # session JSON on stdin, the badge script reads only its flag file.
+      statusLineScript = pkgs.writeShellApplication {
+        name = "claude-statusline";
+        runtimeInputs = [
+          pkgs.goccc
+          pkgs.bash
+          pkgs.coreutils
+          pkgs.findutils
+        ];
+        text = ''
+          cost=$(goccc -statusline) || cost=""
+          cache="''${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/cache/caveman/caveman"
+          badge=""
+          if [ -d "$cache" ]; then
+            script=$(find "$cache" -path '*/hooks/caveman-statusline.sh' -type f -printf '%T@ %p\n' \
+              | sort -n | tail -n 1 | cut -d' ' -f2-)
+            if [ -n "$script" ]; then
+              badge=$(bash "$script" </dev/null) || badge=""
+            fi
+          fi
+          printf '%s%s%s' "$badge" "''${badge:+ }" "$cost"
+        '';
+      };
+
       marketplace = "nix-plugins";
       pluginIds = map (p: "${p}@${marketplace}") pkgs.claude-plugins.pluginNames;
 
@@ -32,7 +61,7 @@
       settings = {
         statusLine = {
           type = "command";
-          command = "${lib.getExe pkgs.goccc} -statusline";
+          command = lib.getExe statusLineScript;
         };
         hooks.PreToolUse = [
           {
