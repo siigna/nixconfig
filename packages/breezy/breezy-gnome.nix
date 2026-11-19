@@ -88,7 +88,7 @@ stdenv.mkDerivation rec {
   # connected-device.ui has two GtkBox widgets with orientation=2, which is
   # not a valid GtkOrientation value (only 0=horizontal, 1=vertical exist).
   # This causes a GLib critical on template init and the app exits immediately.
-  # Bug in breezy-desktop v2.9.11 — the intended value is clearly "vertical".
+  # Bug in breezy-desktop since at least v2.9.11, still in v2.12.4; the intended value is clearly "vertical".
   postPatch = ''
     substituteInPlace ui/src/gtk/connected-device.ui \
       --replace-warn '<property name="orientation">2</property>' '<property name="orientation">vertical</property>'

@@ -21,15 +21,15 @@
 let
   source = {
     pname = "breezy-desktop";
-    version = "v2.9.11";
+    version = "v2.12.4";
     src = fetchgit {
       url = "https://github.com/wheaney/breezy-desktop";
-      rev = "v2.9.11";
+      rev = "v2.12.4";
       fetchSubmodules = true;
       deepClone = false;
       leaveDotGit = false;
       sparseCheckout = [ ];
-      sha256 = "sha256-tJDcmEOZc/rxzFO1eqAtyXf6g10ePLBh2l/dIRL/PYQ=";
+      sha256 = "sha256-lFJgouj5y3aDulRHoqHVcd57tr2igx2YyzzS/7k21co=";
     };
   };
   xrlinuxdriver = callPackage ./xrlinuxdriver.nix { inherit source; };

@@ -6,7 +6,7 @@ Detailed notes from the 2026-03-22 session getting Breezy Desktop (XR glasses dr
 
 - **Host**: nixdeck (Steam Deck, x86_64-linux)
 - **Users**: siigna (uid 1000, GNOME desktop), deck (uid 1001, gamescope/Steam)
-- **Driver**: xrlinuxdriver v2.9.11 (C, built with cmake + cargo/Rust)
+- **Driver**: xrlinuxdriver v2.12.4 (C, built with cmake + cargo/Rust; v2.9.11 until 2026-11-19)
 - **Desktop app**: Breezy Desktop (Python GTK4, GNOME Shell extension)
 - **Steam plugin**: Decky XRGaming (Python, vkBasalt Vulkan layer)
 - **Glasses**: XREAL One Pro (vendor 0x3318, product 0x0436)

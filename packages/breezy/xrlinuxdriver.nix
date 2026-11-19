@@ -3,8 +3,8 @@
 # Upstream ships a bash installer that downloads pre-built binaries; this
 # derivation builds from source instead. A few NixOS-specific complications:
 #
-# Rust submodule: the xreal_one_driver crate lives six directories deep inside
-# a git submodule (modules/xrealInterfaceLibrary). cargoRoot must point there
+# Rust submodule: the xreal_one_driver crate lives inside
+# a git submodule (modules/xrealOneDeviceKit since v2.12; xrealInterfaceLibrary before). cargoRoot must point there
 # so cargoSetupHook can vendor the dependencies.
 #
 # Prebuilt vendor libs: upstream bundles architecture-specific closed-source
@@ -46,7 +46,7 @@
 }:
 let
   pythonEnv = python3.withPackages (ps: [ ps.pyyaml ]);
-  cargoRoot = "modules/xrealInterfaceLibrary/interface_lib/modules/xreal_one_driver";
+  cargoRoot = "modules/xrealOneDeviceKit/modules/xreal_one_driver";
   cargoDeps = rustPlatform.importCargoLock {
     lockFile = "${source.src}/modules/XRLinuxDriver/${cargoRoot}/Cargo.lock";
   };
