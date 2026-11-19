@@ -23,6 +23,7 @@
       xreal-one
       obdium
       vesc-tool
+      reversepuck
       claude-code
       nix-index
     ];

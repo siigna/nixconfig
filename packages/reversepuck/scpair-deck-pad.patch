@@ -1,0 +1,77 @@
+diff --git a/ReversePuck/scpair.py b/ReversePuck/scpair.py
+index a51a5d6..e2d0f93 100644
+--- a/ReversePuck/scpair.py
++++ b/ReversePuck/scpair.py
+@@ -60,6 +60,10 @@ HIDIOCGRDESC = _IOR('H', 0x02, 4 + 4096)
+ VALVE_VID = 0x28DE
+ PUCK_PIDS = (0x1304, 0x1305)
+ CTRL_PIDS = (0x1302, 0x1301, 0x1303, 0x1205)
++# The Steam Deck's built-in pad answers the controller feature channel but has no
++# ESB radio, so a bond written to it is useless and the 0x95 reboot drops the pad
++# until it re-enumerates. Never pick it as the default pairing target.
++DECK_PID = 0x1205
+ 
+ 
+ def _sysfs_ids(node):
+@@ -495,6 +499,7 @@ def pair(puck_serial=None, puck_slot=None, controller_serial=None, controller_sl
+                         pass
+     else: 
+         # Controller serial is none. Assume the user wants to use the 1st wired controller. 
++        ctrls = [c for c in ctrls if c.pid != DECK_PID]
+         if not ctrls:
+             raise SystemExit("no controller (28DE:1302) control interface found - please plug in either a Steam Controller or the ReversePuck controller")
+            
+@@ -652,7 +657,11 @@ def get_single_controller_pairings(controller_dev):
+         if bond is None: 
+             return None
+ 
+-        if bond[0] == 0x01 and bond[1] == 0xed and bond[2] > 0:
++        if bond[3:3 + len(bond_str)] == bond_str:
++            # Devices without a keyed-read handler (ReversePuckFirmware, the
++            # Deck's built-in pad) echo the SET payload back unchanged.
++            slots.append({"idx": idx, "used": False, "unknown": True, "active": False})
++        elif bond[0] == 0x01 and bond[1] == 0xed and bond[2] > 0:
+             bond_len = bond[2]
+             bond_key = bond[3:3+8]
+             bond_name = bond[11:11+(bond_len-8)].split(b'\x00')[0].decode("latin1", "replace")
+@@ -737,6 +746,11 @@ def cmd_reboot(device_serial: str, reboot_type: int):
+         return True
+ 
+ 
++def fmt_firmware(ts, commit):
++    ts_str = "unknown" if ts is None else hex(ts).replace('0x', '').upper()
++    return ts_str + (" (" + commit + ")" if commit else "")
++
++
+ def cmd_list():
+     devs = enumerate_devices()
+     pucks = devs["puck"]
+@@ -749,7 +763,7 @@ def cmd_list():
+         for puck in ps:
+             slots = puck['slots']
+ 
+-            firmware_str = hex(puck['firmware_ts']).replace('0x', '').upper() + " (" + puck['firmware_commit']  + ")"
++            firmware_str = fmt_firmware(puck['firmware_ts'], puck['firmware_commit'])
+ 
+             print(f"Puck: {puck['serial']} ({puck['info_str']}), firmware {firmware_str}")
+ 
+@@ -782,12 +796,15 @@ def cmd_list():
+             if cdata is None: 
+                 continue
+ 
+-            firmware_str = hex(cdata['firmware_ts']).replace('0x', '').upper() + " (" + cdata['firmware_commit']  + ")"
+-        
+-            print(f"Controller ({ctype}): {cdata['serial']}, firmware {firmware_str}")
++            firmware_str = fmt_firmware(cdata['firmware_ts'], cdata['firmware_commit'])
++            name = cdata['serial'] or ("Steam Deck built-in" if c.pid == DECK_PID else "?")
++
++            print(f"Controller ({ctype}): {name}, firmware {firmware_str}")
+ 
+             for s in cdata['slots']:
+-                if s['used']:
++                if s.get('unknown'):
++                    print("  slot %d: unknown (device can't report bonds)" % s["idx"])
++                elif s['used']:
+                     print("  slot %d: %s (key %s)%s" % (s["idx"], s["serial"], s["key"], (', selected' if s['active'] else '')))
+                 else:
+                     print("  slot %d: Empty%s" % (s["idx"], (', selected' if s['active'] else '')))

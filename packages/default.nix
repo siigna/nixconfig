@@ -12,6 +12,7 @@ self: super: {
   escargot-tool = super.callPackage ./escargot-tool { };
   escargot-tool-wine = self.callPackage ./escargot-tool/wine.nix { };
   claude-plugins = self.callPackage ./claude-plugins { };
+  reversepuck = super.callPackage ./reversepuck { };
   # Downgrade alsa-ucm-conf to 1.2.8
   # https://github.com/Jovian-Experiments/Jovian-NixOS/issues/88
   #alsa-ucm-conf = super.callPackage ./alsa-ucm-conf { };

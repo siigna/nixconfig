@@ -93,6 +93,7 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `intellij` | `programs/intellij [N]/intellij.nix` — IntelliJ IDEA |
 | `radio` | `programs/radio [N]/radio.nix` — SDR / radio tools |
 | `vesc-tool` | `programs/vesc-tool [N]/vesc-tool.nix` — VESC motor-controller IDE + ESCargot fork (AppImage and Windows build under Wine); adds siigna to `dialout` for `/dev/ttyACM*` |
+| `reversepuck` | `programs/reversepuck [N]/reversepuck.nix` — Deck-as-Steam-Controller-2 forwarder (`reversepuck`) + hidraw pairing tool (`scpair`) from safijari/openpuck; adds siigna to `dialout` for the ReversePuck dongle's `/dev/ttyACM*` (nixdeck) |
 | `fonts` | `programs/fonts [N]/fonts.nix` — comic-relief, font-awesome |
 | `hosts-file` | `services/hosts-file [N]/hosts-file.nix` — static `networking.extraHosts` for LAN boxes (proxmox, nixmox, octopi, homeassistant) |
 | `gdm-nopasswdlogin` | `services/gdm-nopasswdlogin [N]/gdm-nopasswdlogin.nix` — `nopasswdlogin` group + GDM PAM rule |
@@ -140,6 +141,7 @@ uv2nix build, with `nixpkgs` followed).
 | `agnix` | `packages/agnix/` | Linter for CLAUDE.md, skills, hooks, plugin and MCP config |
 | `claude-plugins` | `packages/claude-plugins/` | Local plugin marketplace built from pinned upstream repos |
 | `empryo` | `packages/empryo/` | Empryo (ex-SoulForge) AI coding agent; prebuilt unfree Bun binary, `deps/` kept beside it in `libexec` |
+| `reversepuck` | `packages/reversepuck/` | ReversePuck Deck app from safijari/openpuck (pinned rev); nixpkgs Python replaces upstream's uv launcher; `scpair-deck-pad.patch` keeps `scpair pair` off the Deck's built-in pad |
 | `escargot-tool` | `packages/escargot-tool/` | ESCargot VESC Tool fork; pinned AppImage from releases.escargot.free (no "latest" alias — bump `release` + hashes in `release.nix`), installed by `vesc-tool` as `escargot-tool` |
 | `escargot-tool-wine` | `packages/escargot-tool/wine.nix` | Same release's Windows `.exe` under Wine, own prefix; stub `icuuc.dll` (`icuuc-stub.c`) stands in for the Windows 10 system ICU Wine lacks |
 
