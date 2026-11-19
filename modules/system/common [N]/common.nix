@@ -54,26 +54,14 @@
               pkgs = final;
             }
           )
-          # patchelf 0.19.2 aborts on semgrep-core's prebuilt binary (tracking:
-          # NixOS/nixpkgs#577387). Fix it up with 0.15.2, as upstream does for rgp; drop once
-          # nixos-unstable has a fixed patchelf.
-          # semgrep 1.180.0 imports mcp.server.fastmcp, which mcp 2.x renamed, so it needs mcp 1.x.
-          # NixOS/nixpkgs#580821 fixes both; drop this override once that lands.
-          (final: prev: {
+          # semgrep 1.180.0 imports mcp.server.fastmcp, which mcp 2.x renamed; nixpkgs marks it
+          # broken with mcp >= 2, so build it against mcp 1.x. Drop once nixpkgs semgrep is fixed.
+          # (The patchelf 0.15.2 pin that used to live here is gone: nixpkgs itself moved patchelf
+          # back to 0.15.2 plus a fix patch in 2026-11, see NixOS/nixpkgs#577387.)
+          (final: _: {
             semgrep = final.python3.pkgs.toPythonApplication (
               final.python3.pkgs.semgrep.override {
                 mcp = final.python3.pkgs.mcp_1;
-                semgrep-core = final.python3.pkgs.semgrep.semgrep-core.override {
-                  patchelf = prev.patchelf.overrideAttrs (
-                    finalAttrs: _: {
-                      version = "0.15.2";
-                      src = final.fetchurl {
-                        url = "https://github.com/NixOS/patchelf/releases/download/${finalAttrs.version}/patchelf-${finalAttrs.version}.tar.bz2";
-                        hash = "sha256-F3RfVkFZyOIo/EEtplogSLhGxLa0Igt3y/IkFuAvLXw=";
-                      };
-                    }
-                  );
-                };
               }
             );
           })

@@ -24,12 +24,15 @@
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "empryo";
-  version = "3.12.2-beta";
+  version = "3.13.1-beta";
 
+  # dl.empryo.com drops a release once a newer one is out (3.11.0 and 3.12.2 both went 404
+  # within weeks), so a fresh build fails until this is bumped. Newest: dl.empryo.com/latest.json;
+  # check the tarball against that release's SHA256SUMS.txt.
   # The standard x64 build needs AVX2/FMA/BMI2; the Deck's Zen 2 has them.
   src = fetchurl {
     url = "https://dl.empryo.com/v${finalAttrs.version}/empryo-${finalAttrs.version}-linux-x64.tar.gz";
-    hash = "sha256-9D0g5PrDDBzEACmbyaBQAtqtcDwTcp0RgFh8Svv0Oqg=";
+    hash = "sha256-7Yu5O52SInNCJUV81jbitJY5Er7uI2TO3LB5K49Gnxg=";
   };
 
   nativeBuildInputs = [

@@ -43,10 +43,17 @@
     # Always-up-to-date Codex CLI
     codex-cli-nix.url = "github:sadjow/codex-cli-nix";
 
+    # Hermes builds against this pinned nixpkgs (our 2026-11-01 one) instead of `nixpkgs`:
+    # its nix/pm-packages.nix adds patchelf's upstream overlap fix on top of nixpkgs' patchelf,
+    # written for 0.19.2, and nixpkgs went back to 0.15.2 (2026-11, NixOS/nixpkgs#577387), where
+    # that patch doesn't apply, so its Node/ffmpeg fail to build. Point this back at `nixpkgs`
+    # once Hermes guards the patch or nixpkgs ships patchelf >= 0.19.3.
+    nixpkgs-hermes.url = "github:nixos/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f";
+
     # Hermes Agent (Nous Research) — packaged upstream as a uv2nix flake
     hermes-agent = {
       url = "github:NousResearch/hermes-agent";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs-hermes";
       inputs.flake-parts.follows = "flake-parts";
       inputs.home-manager.follows = "home-manager";
     };

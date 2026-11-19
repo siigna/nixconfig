@@ -1,5 +1,6 @@
 Vendored from duckysocks22/Jovian-NixOS branch hdmi_cec, commit 10befd36ce3337db836714ff9172eb2b85141294,
 pkgs/linux-jovian/cec-notifier-wildcard-fallback-pairing.patch. Applied by configuration.nix.
+Refreshed 2026-11-17 for linux 7.3.1-valve3 (same change; context moved, applied with fuzz 2 before).
 
 From: Socks <code@olympus.moe>
 Subject: [PATCH] cec: notifier: Make pairing order agnostic.
@@ -17,11 +18,10 @@ This patch modifies the lookup to be two-pass: When a named lookup fails to find
 It allows it to connect to a nameless entry on the same device (fremont's GPU in this case), provided no other CEC adapter has claimed it yet. 
 Exact matching via names it prioritized over the fallback, and the check is redone under the entry's own lock so two adapters that are 
 attempting to connect at the same time can never attach to the same entry simultaniously. 
-
 diff --git a/drivers/media/cec/core/cec-notifier.c b/drivers/media/cec/core/cec-notifier.c
 --- a/drivers/media/cec/core/cec-notifier.c
 +++ b/drivers/media/cec/core/cec-notifier.c
-@@ -51,16 +51,39 @@
+@@ -51,18 +51,41 @@
  static struct cec_notifier *
  cec_notifier_get_conn(struct device *hdmi_dev, const char *port_name)
  {
@@ -33,23 +33,21 @@ diff --git a/drivers/media/cec/core/cec-notifier.c b/drivers/media/cec/core/cec-
 -		if (n->hdmi_dev == hdmi_dev &&
 -		    (!port_name ||
 -		     (n->port_name && !strcmp(n->port_name, port_name)))) {
--			kref_get(&n->kref);
--			mutex_unlock(&cec_notifiers_lock);
--			return n;
--		}
 +		if (n->hdmi_dev != hdmi_dev)
 +			continue;
 +
 +		if (!port_name ||
 +		    (n->port_name && !strcmp(n->port_name, port_name))) {
-+			kref_get(&n->kref);
+ 			kref_get(&n->kref);
+-			mutex_unlock(&cec_notifiers_lock);
+-			return n;
 +			goto unlock;
 +		}
 +
 +               /* Fallback if no exact match exists */
 +		if (!n->port_name && !n->cec_adap && !wildcard)
 +			wildcard = n;
- 	}
++	}
 +
 +	if (wildcard) {
 +		/*
@@ -65,7 +63,9 @@ diff --git a/drivers/media/cec/core/cec-notifier.c b/drivers/media/cec/core/cec-
 +			mutex_unlock(&wildcard->lock);
 +			n = wildcard;
 +			goto unlock;
-+		}
-+	}
+ 		}
+ 	}
 +
  	n = kzalloc_obj(*n);
+ 	if (!n)
+ 		goto unlock;
