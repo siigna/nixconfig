@@ -17,6 +17,11 @@
 #   agnix           /agnix command + skill wrapping the agnix linter.
 #   good-readme     README create/audit skill (text only). Like terraform-skill,
 #                   non-strict with just the skill directory copied.
+#   ponytail        "Lazy senior dev" skills + hooks (SessionStart, SubagentStart,
+#                   UserPromptSubmit) and a band module writing a per-task ledger to
+#                   ~/.config/ponytail/band/. Its only network use is an optional
+#                   webhook, off unless configured. Hooks call bare `node`; pinned to
+#                   our nodejs like cc-safety-net.
 #   trailofbits/*   Selected security-review plugins (tobPlugins below); none
 #                   of them install hooks.
 {
@@ -54,6 +59,13 @@ let
     repo = "good-readme";
     rev = "5ac91dca6054352a590406e6a12703ee1b4cfd09";
     hash = "sha256-RQtbc6B3x3lDGjmZsTz9P36iAkDK3ne5CTeWZJtzI5o=";
+  };
+
+  ponytail = fetchFromGitHub {
+    owner = "DietrichGebert";
+    repo = "ponytail";
+    rev = "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846";
+    hash = "sha256-PhPtZbeX2wBp19GtWRy+fV93+fFYZe5S487eXPDl/us=";
   };
 
   trailofbits = fetchFromGitHub {
@@ -101,6 +113,10 @@ let
       })
       (plugin "skill-codex" { })
       (plugin "agnix" { })
+      (plugin "ponytail" {
+        # Keep in step with .claude-plugin/plugin.json's version when bumping rev.
+        version = "5.3.3";
+      })
       (plugin "good-readme" {
         description = "Create, audit and improve GitHub README documents";
         # Keep in step with metadata.version in upstream's SKILL.md when bumping rev.
@@ -133,6 +149,11 @@ runCommand "claude-plugins"
 
     cp -r ${skillCodex}/plugins/skill-codex $out/plugins/skill-codex
     cp -r ${agnix.src}/plugin $out/plugins/agnix
+
+    cp -r ${ponytail} $out/plugins/ponytail
+    chmod -R u+w $out/plugins/ponytail
+    substituteInPlace $out/plugins/ponytail/hooks/claude-codex-hooks.json \
+      --replace-fail '"node -e ' '"${lib.getExe nodejs} -e '
 
     mkdir -p $out/plugins/good-readme
     cp -r ${goodReadme}/skills $out/plugins/good-readme/
