@@ -82,7 +82,7 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `tv-apps` | `programs/tv-apps [N]/tv-apps.nix` — Plex HTPC + Chrome kiosk launchers for YouTube TV, Netflix, Prime Video (steammachine) |
 | `atop` | `programs/atop [N]/atop.nix` — atop datalogging (60 s) + process accounting; hourly `atopsar` text reports served on :8088, tailnet-only (steammachine) |
 | `lightbar` | `programs/lightbar [N]/lightbar.nix` — light bar daemon: CPU/network meter (default), Nix-build breathing, fixed look or off; `sudo lightbar mode …` to switch live (steammachine) |
-| `hermes` | `services/hermes [N]/hermes.nix` — Hermes Agent gateway (Telegram → agent → OpenRouter) as `hermes` user; secrets in `/var/lib/hermes-secrets/env`, default-deny without `TELEGRAM_ALLOWED_USERS` (steammachine) |
+| `hermes` | `services/hermes [N]/hermes.nix` — Hermes Agent gateway (Telegram → agent → OpenRouter) as `hermes` user; secrets in `/var/lib/hermes-secrets/env`, default-deny without `TELEGRAM_ALLOWED_USERS`; tailnet dashboard on :9119; `AGENTS.md` beside it is Leonard's routines: flake/Jovian updates and ESCargot upstream merges (own clones, builds/checks, never pushes/deploys; fetch via `--upload-pack='sudo -u hermes git-upload-pack'`) (steammachine) |
 | `tailscale` | `services/tailscale [N]/tailscale.nix` — service + firewall rules (auth via `tailscale login`) |
 | `nixbuild` | `services/nixbuild [N]/nixbuild.nix` — distributed builds: steammachine, then eu.nixbuild.net |
 | `siigna` | `users/siigna [N]/siigna.nix` — primary user, wheel + dev groups |

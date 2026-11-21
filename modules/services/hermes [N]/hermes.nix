@@ -2,11 +2,23 @@
 {
   # Hermes Agent gateway: text the Telegram bot, the agent runs here (as the `hermes` user,
   # state in /var/lib/hermes) and replies. Model calls go to OpenRouter (Hermes' default).
-  flake.modules.nixos.hermes = {
+  flake.modules.nixos.hermes = { pkgs, ... }: {
+    # No one else in the `hermes` group: with another member, Hermes refuses its own control
+    # socket (group-writable HERMES_HOME). Fetch Leonard's clone via sudo, see AGENTS.md.
     imports = [ inputs.hermes-agent.nixosModules.default ];
 
     services.hermes-agent = {
       enable = true;
+      # Flake maintenance (AGENTS.md): build both hosts, no deploy rights.
+      workingDirectory = "/var/lib/hermes/workspace"; # the module default; AGENTS.md cites it
+      documents."AGENTS.md" = ./AGENTS.md;
+      extraPackages = with pkgs; [
+        nix
+        nixfmt
+        jq
+        diffutils
+        fwupd
+      ];
       settings = {
         model.default = "anthropic/claude-sonnet-5.5";
         # Scheduled jobs don't need the chat model; unpinned jobs run on this.
