@@ -7,12 +7,36 @@
 
     services.hermes-agent = {
       enable = true;
-      settings.model.default = "anthropic/claude-sonnet-5.5";
+      settings = {
+        model.default = "anthropic/claude-sonnet-5.5";
+        # Scheduled jobs don't need the chat model; unpinned jobs run on this.
+        cron.model = "anthropic/claude-haiku-5.5";
+        # Host-header (DNS-rebinding) guard only accepts the bound address plus this name.
+        dashboard.public_url = "http://steammachine:9119";
+      };
       # Not in the repo (public) and not in the store. Create on the box, root:root 0600:
       #   OPENROUTER_API_KEY=...
       #   TELEGRAM_BOT_TOKEN=...
       #   TELEGRAM_ALLOWED_USERS=<numeric Telegram user id>   # gateway is default-deny without it
+      #   HERMES_DASHBOARD_BASIC_AUTH_USERNAME=...             # a non-loopback dashboard refuses
+      #   HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=...             # to start without these
+      #   HERMES_DASHBOARD_BASIC_AUTH_SECRET=<openssl rand -base64 32>
       environmentFiles = [ "/var/lib/hermes-secrets/env" ];
+
+      # Web dashboard (sessions, cron, kanban) on the tailnet only: the firewall trusts just
+      # tailscale0. Bind by interface, not name: `steammachine` resolves to 127.0.0.2 locally.
+      backend = {
+        mode = "dashboard";
+        waitFor = "interface";
+        interfaceName = "tailscale0";
+      };
+
+      # Every turn resends history; short replies keep it small.
+      hermesHomeFiles."SOUL.md" = ''
+        You are Leonard, siigna's assistant. Be terse: short sentences, no filler, no
+        pleasantries, no recap of what was asked. Keep technical detail exact. Ask only
+        when blocked.
+      '';
     };
   };
 }
