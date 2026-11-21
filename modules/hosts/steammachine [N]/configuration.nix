@@ -167,6 +167,9 @@ in
       # Reachability over Tailscale beats the few mW Wi-Fi power saving buys on a mains box.
       networking.networkmanager.wifi.powersave = false;
 
+      # Evidence.dev dev server (~/src/siigna/realestate) on the home LAN too, not only the tailnet.
+      networking.firewall.allowedTCPPorts = [ 3000 ];
+
       # Light bar: CPU/network meter by default; `sudo lightbar mode build|fixed|off` to try others.
       steammachine.lightbar.enable = true;
 
@@ -199,6 +202,7 @@ in
       environment.systemPackages = with pkgs; [
         git
         htop
+        tmux # long-running jobs over ssh (realestate scrapes)
         vim
         # App-menu entry for leaving Plasma (logging out works too).
         (makeDesktopItem {
