@@ -61,6 +61,15 @@
         services.displayManager.gdm.enable = true;
         services.desktopManager.gnome.enable = true;
 
+        # Power button suspends, locked so a stale per-user 'hibernate' can't win: hibernation
+        # cuts power to the Deck's UART Bluetooth chip and drops BootNext (see bootnext.nix).
+        programs.dconf.profiles.user.databases = [
+          {
+            settings."org/gnome/settings-daemon/plugins/power".power-button-action = "suspend";
+            locks = [ "/org/gnome/settings-daemon/plugins/power/power-button-action" ];
+          }
+        ];
+
         # GDM monitor config: prefer XREAL glasses as primary, fall back to built-in eDP-1.
         # GDM reads /var/lib/gdm/.config/monitors.xml and matches the config whose monitor
         # set (including disabled) matches the currently connected hardware.

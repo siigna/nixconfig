@@ -4,6 +4,7 @@
     {
       config,
       lib,
+      pkgs,
       modulesPath,
       ...
     }:
@@ -43,6 +44,24 @@
       };
 
       swapDevices = [ { device = "/dev/disk/by-uuid/716413ae-f194-4ad1-a163-ab5da7652ae1"; } ];
+
+      # The QCA Bluetooth chip on UART loses its firmware when hibernation cuts power, and
+      # hci_uart doesn't reload it on resume (hci0 times out until reboot). Rebind the driver.
+      # hibernate.target is only reached once systemd-hibernate.service returns, i.e. post-resume.
+      systemd.services.bluetooth-reload-after-hibernate = {
+        description = "Reload hci_uart after hibernate resume";
+        wantedBy = [
+          "hibernate.target"
+          "suspend-then-hibernate.target"
+        ];
+        after = [
+          "hibernate.target"
+          "suspend-then-hibernate.target"
+        ];
+        serviceConfig.Type = "oneshot";
+        path = [ pkgs.kmod ];
+        script = "modprobe -r hci_uart && modprobe hci_uart";
+      };
 
       networking.useDHCP = lib.mkDefault true;
 
