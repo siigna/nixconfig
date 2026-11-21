@@ -6,7 +6,6 @@
       environment.systemPackages = with pkgs; [
         arduino
         bind
-        direnv
         ec2-api-tools
         element-desktop
         awscli2
@@ -196,6 +195,7 @@
         enable = true;
         package = pkgs.gnomeExtensions.gsconnect;
       };
-      programs.bash.interactiveShellInit = ''eval "$(direnv hook bash)"'';
+      # direnv + bash hook + nix-direnv (cached, GC-rooted `use nix` / `use flake`)
+      programs.direnv.enable = true;
     };
 }
