@@ -18,6 +18,7 @@ in
         tv-apps
         atop
         lightbar
+        hermes
       ];
 
       networking.hostName = "steammachine";

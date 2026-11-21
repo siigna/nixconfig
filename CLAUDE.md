@@ -58,7 +58,7 @@ The `flake.modules.nixos` option is enabled by `inputs.flake-parts.flakeModules.
 
 **`modules/hosts/steammachine [N]/`** (Steam Machine):
 - `flake-parts.nix` — `mkNixos "x86_64-linux" "steammachine"`
-- `configuration.nix` — imports `nixos-common`, `jovian-fremont` (autostart via SDDM, Plasma desktop mode), `builder-service`, `tailscale`, `siigna`, `hosts-file`, `tv-apps`, `atop`, `lightbar`
+- `configuration.nix` — imports `nixos-common`, `jovian-fremont` (autostart via SDDM, Plasma desktop mode), `builder-service`, `tailscale`, `siigna`, `hosts-file`, `tv-apps`, `atop`, `lightbar`, `hermes`
 - `hardware.nix` — registers `flake.modules.nixos.hardware-steammachine` (label-based root/ESP, zram)
 
 Each host sets its own `networking.hostName` and `system.stateVersion`.
@@ -82,6 +82,7 @@ Directory suffix hints at platform scope (documentation only — not enforced by
 | `tv-apps` | `programs/tv-apps [N]/tv-apps.nix` — Plex HTPC + Chrome kiosk launchers for YouTube TV, Netflix, Prime Video (steammachine) |
 | `atop` | `programs/atop [N]/atop.nix` — atop datalogging (60 s) + process accounting; hourly `atopsar` text reports served on :8088, tailnet-only (steammachine) |
 | `lightbar` | `programs/lightbar [N]/lightbar.nix` — light bar daemon: CPU/network meter (default), Nix-build breathing, fixed look or off; `sudo lightbar mode …` to switch live (steammachine) |
+| `hermes` | `services/hermes [N]/hermes.nix` — Hermes Agent gateway (Telegram → agent → OpenRouter) as `hermes` user; secrets in `/var/lib/hermes-secrets/env`, default-deny without `TELEGRAM_ALLOWED_USERS` (steammachine) |
 | `tailscale` | `services/tailscale [N]/tailscale.nix` — service + firewall rules (auth via `tailscale login`) |
 | `nixbuild` | `services/nixbuild [N]/nixbuild.nix` — distributed builds: steammachine, then eu.nixbuild.net |
 | `siigna` | `users/siigna [N]/siigna.nix` — primary user, wheel + dev groups |
